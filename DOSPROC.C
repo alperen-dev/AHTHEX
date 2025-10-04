@@ -1,6 +1,6 @@
 #include "AHTHEX.H"
 
-static LPVOID VIDMEM = (LPBYTE)0xB0000000LU;
+static LPVOID VIDMEM = (LPBYTE)0xB8000000LU;
 
 VOID SetVideoMode(BYTE VideoMode)
 {

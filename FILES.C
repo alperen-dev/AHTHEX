@@ -1,3 +1,5 @@
+// TODO: make this file portable.
+
 #include "AHTHEX.H"
 
 static char temp_filename[MAXPATH];

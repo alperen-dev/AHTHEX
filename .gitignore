@@ -4,6 +4,12 @@
 # AHTHEX log file
 *.LOG
 
+# AHTHEX settings file
+*.AHT
+
+# Turbo c++ 1.01 swap file
+*.SWP
+
 # Object files
 *.o
 *.ko

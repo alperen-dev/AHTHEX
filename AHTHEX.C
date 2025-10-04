@@ -2,7 +2,7 @@
 
 #define print_help_message() printf("AHTHEX <filename1> [filename2] ... [filename32]\n")
 
-HEXFILE h[MAX_NUMBER_OF_FILE] = {0};
+HEXFILE h[MAX_NUMBER_OF_FILE] = {0}; // TODO: change this array to double linked list!
 int file_count = 0, cf = 0; // cf: current_file
 
 WORD MAXCOLUMN = 80, MAXROW = 25;
@@ -326,7 +326,7 @@ void help_screen(void)
 			" CTRL + Left --> Previous file\n"
 			" A --> Add new byte to the end of current file\n"
 			" I --> Insert new byte to current file\n"
-			" Backspace or Delete --> Delete byte from current file"
+			" Backspace or Delete --> Delete byte from current file\n"
 			" S --> Save current file (overwrite)\n"
 			" CTRL + S --> Save all file (overwrite)\n"
 			" ALT + S --> Save as\n"
@@ -338,7 +338,7 @@ void help_screen(void)
 			" CTRL + X --> Close current file without save\n"
 			" CTRL + N --> Create new file (TODO)\n"
 			" CTRL + O --> Open file\n"
-			" ALT + O --> Options"
+			" ALT + O --> Options\n"
 			" ESC --> Exit without save\n"
 			"\n"
 			"\n"

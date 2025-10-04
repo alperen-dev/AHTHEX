@@ -334,7 +334,7 @@ static FILE *log_file = NULL;
 BOOL DebugInit(VOID)
 {
 	#ifdef DEBUG_MODE
-	if( (log_file = fopen("AHTHEX.LOG", "a") ) == NULL)
+	if( (log_file = fopen("AHTHEXD.LOG", "a") ) == NULL)
 	{
 		return FALSE;
 	}

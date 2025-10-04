@@ -3,7 +3,7 @@
 	Copyright: All Rights Free.
 	Author: AHT
 	Created date: 30.05.2024 17.14
-	Modify date: 30.05.2024 17.14
+	Modify date: 05.10.2025 18.57
 	Description: Types and defines.
 */
 

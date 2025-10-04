@@ -169,7 +169,7 @@ BOOL open_file(VOID)
 	printf("Type file name: ");
 	
 	fgets(temp_filename, MAXPATH, stdin);
-	temp_filename[strlen(temp_filename)-1] = '\0';
+	temp_filename[strlen(temp_filename)-1] = (temp_filename[strlen(temp_filename)-1] == '\n' ? '\0' : temp_filename[strlen(temp_filename)-1]);
 	
 	if((h[file_count].filename = malloc(sizeof(char) * (strlen(temp_filename) + 1) )) == NULL)
 	{

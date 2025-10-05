@@ -7,55 +7,67 @@ static char temp_filename[MAXPATH];
 long get_file_size(FILE *f) // error: -1
 {
 	long temp = 0L, size = 0L;
-	if(f == NULL)
+	if(f == NULL) // wrong parameter
 		return -1;
-	if((temp = ftell(f)) == -1L)
+	if((temp = ftell(f)) == -1L) // current position cannot get
 		return -1;
-	if(fseek(f, 0L, SEEK_END) != 0)
+	if(fseek(f, 0L, SEEK_END) != 0) // cursor cannot set
 		return -1;
-	if((size = ftell(f)) == -1L)
+	if((size = ftell(f)) == -1L) // current position cannot get
 		return -1;
-	if(fseek(f, temp, SEEK_SET) != 0)
+	if(fseek(f, temp, SEEK_SET) != 0) // cursor cannot set
 		return -1;
-	return  (h[cf].size = size);
+	return size;
 }
 
-LPBYTE read_file(VOID)
+LPBYTE read_file(HEXFILE *h)
 {
 	register long i = 0;
 	FILE *f = NULL;
 	LPBYTE buff = NULL;
-	if(h[cf].filename == NULL)
+	
+	// check parameter control
+	if(h->filename == NULL)
 	{
 		errno = EINVAL;
-		Debug(errno, "h[cf].filename = NULL");
+		Debug(errno, "h->filename = NULL");
 		return NULL;
 	}
-	if((f = fopen(h[cf].filename, "rb")) == NULL)
+	
+	// open file as read access
+	if((f = fopen(h->filename, "rb")) == NULL)
 	{
 		Debug(errno, NULL);
 		return NULL;
 	}
+	
+	// get file size
 	if( (i = get_file_size(f)) < 0)
 	{
 		errno = ERANGE;
-		Debug(errno, NULL);
+		Debug(errno, "Cannot get file size");
 		fclose(f);
 		return NULL;
 	}
-	if( (buff = (LPBYTE)farmalloc( h[cf].size = MAX(h[cf].size, 1) ) ) == NULL)
+	
+	// allocate memory as large as file size
+	if( (buff = (LPBYTE)farmalloc( h->size = MAX(i, 1) ) ) == NULL)
 	{
 		errno = ENOMEM;
 		Debug(errno, NULL);
 		fclose(f);
 		return NULL; // Not enought memory.
 	}
+	
+	// check file emptiness
 	if(i == 0) // empty file
 	{
 		buff[0] = '\0';
 		fclose(f);
-		return (LPBYTE)(h[cf].buff = buff);
+		return (LPBYTE)(h->buff = buff);
 	}
+	
+	// set file cursor to start
 	if(fseek(f, 0L, SEEK_SET))
 	{
 		Debug(errno, "Cursor can't set");
@@ -63,50 +75,57 @@ LPBYTE read_file(VOID)
 		farfree((void far*)buff);
 		return NULL;
 	}
-	for(i = 0; i < h[cf].size; i++) // read file
+	
+	// read file to buffer
+	for(i = 0; i < h->size; i++) // read file
 	{
 		*buff++ = fgetc(f);
 	}
+	
 	fclose(f);
-	return (LPBYTE)(h[cf].buff = buff-i);
+	return (LPBYTE)(h->buff = buff-i);
 }
 
-BOOL write_file(VOID)
+BOOL write_file(HEXFILE *h)
 {
 	register long i = 0;
 	FILE *f = NULL;
-	LPBYTE buff = h[cf].buff;
+	LPBYTE buff = h->buff;
 	
-	if(h[cf].filename == NULL)
+	// check parameters
+	if(h->filename == NULL)
 	{
-		return save_as();
+		return save_as(h);
 	}
-	
-	if(h[cf].buff == NULL)
+	if(h->buff == NULL)
 	{
-		Debug(EINVAL, "h[cf].buff = NULL");
+		Debug(EINVAL, "h->buff = NULL");
 		return FALSE;
 	}
 	
-	if( (f = fopen(h[cf].filename, "wb")) == NULL)
+	// open file as write access
+	if( (f = fopen(h->filename, "wb")) == NULL)
 	{
 		Debug(errno, NULL);
 		return FALSE;
 	}
-	for(i = 0; i < h[cf].size; i++)
+	
+	// write file
+	for(i = 0; i < h->size; i++)
 	{
 		fputc(*(buff++), f);
 	}
+	
 	fclose(f);
 	return TRUE;
 }
 
-BOOL save_as(VOID)
+BOOL save_as(HEXFILE *h)
 {
 	ClearScreen();
 	printf("type file name: ");
 	fgets(temp_filename, MAXPATH, stdin);
-	temp_filename[strlen(temp_filename)-1] = '\0';
+	temp_filename[strlen(temp_filename)-1] = (temp_filename[strlen(temp_filename)-1] == '\n' ? '\0' : temp_filename[strlen(temp_filename)-1]);
 	
 	if(access(temp_filename, 0) == 0)
 	{
@@ -119,87 +138,114 @@ BOOL save_as(VOID)
 		}
 	}
 	
-	if(h[cf].filename != NULL)
-		free(h[cf].filename);
+	if(h->filename != NULL)
+		free(h->filename);
 	
-	if((h[cf].filename = malloc(sizeof(char) * (strlen(temp_filename) + 1) )) == NULL)
+	if((h->filename = malloc(sizeof(char) * (strlen(temp_filename) + 1) )) == NULL)
 	{
 		Debug(errno, NULL);
 		return FALSE;
 	}
-	strcpy(h[cf].filename, temp_filename);
+	strcpy(h->filename, temp_filename);
 	ClearScreen();
-	return write_file();
+	return write_file(cf);
 }
 
-char close_file(VOID)
+// These functions get parameter node because they will change multiple file properities
+
+char close_file(Node *n)
 {
-	int i = 0;
-	if(cf != file_count-1)
+	
+	if(n != NULL)
 	{
-		for(i = cf; i < file_count-1; i++)
+		if(n->data != NULL)
 		{
-			memmove(&h[i], &h[i+1], sizeof(HEXFILE));
+			free(n->data);
 		}
+		DeleteNode(n);
 	}
-	else if(cf != 0)
-	{
-		memmove(&h[cf], '\0', sizeof(HEXFILE));
-		cf--;
-	}
-	else // cf is 0 and last file: close editor
+	file_count--;
+	if(file_count == 0) // no file left, close editor
 	{
 		return KB_ESC;
 	}
-	file_count--;
 	return 0;
 }
 
-BOOL open_file(VOID)
+BOOL open_file(Node *n)
 {
-	int temp_cf = cf;
-	ClearScreen();
-	if(file_count >= MAX_NUMBER_OF_FILE)
+	if(n != NULL)
 	{
-		printf("Can't open file: file_count >= MAX_NUMBER_OF_FILE\n");
-		Debug(EMFILE, NULL);
-		getch();
-		return FALSE;
-	}
-	printf("Type file name: ");
-	
-	fgets(temp_filename, MAXPATH, stdin);
-	temp_filename[strlen(temp_filename)-1] = (temp_filename[strlen(temp_filename)-1] == '\n' ? '\0' : temp_filename[strlen(temp_filename)-1]);
-	
-	if((h[file_count].filename = malloc(sizeof(char) * (strlen(temp_filename) + 1) )) == NULL)
-	{
-		Debug(errno, NULL);
-		return FALSE;
-	}
-	cf = file_count;
-	strcpy(h[cf].filename, temp_filename);
-	if(read_file() == NULL)
-	{
-		cf = temp_cf;
+		HEXFILE *h = (HEXFILE*)calloc(1, sizeof(HEXFILE));
+		if(h == NULL)
+		{
+			errno = ENOMEM;
+			Debug(errno, NULL);
+			return NULL; // Not enought memory.
+		}
+		
+		// get file name from user
 		ClearScreen();
-		return FALSE;
+		printf("Type file name: ");
+		
+		fgets(temp_filename, MAXPATH, stdin);
+		temp_filename[strlen(temp_filename)-1] = (temp_filename[strlen(temp_filename)-1] == '\n' ? '\0' : temp_filename[strlen(temp_filename)-1]);
+		
+		if((h->filename = (char*)malloc(sizeof(char) * (strlen(temp_filename) + 1) )) == NULL)
+		{
+			Debug(errno, NULL);
+			free(h);
+			return FALSE;
+		}
+		strcpy(h->filename, temp_filename);
+		
+		ClearScreen();
+		
+		if(read_file(h) == NULL)
+		{
+			free(h->filename);
+			free(h);
+			return FALSE;
+		}
+		
+		if(AddNext(n, h) == NULL)
+		{
+			farfree((void far*)h->buff);
+			free(h->filename);
+			free(h);
+			Debug(errno, "New element cannot add to list");
+			return FALSE;
+		}
+		
+		file_count++;
+		return TRUE;
 	}
-	file_count++;
-	ClearScreen();
-	return TRUE;
+	return FALSE;
 }
 
-BOOL create_new_file(VOID)
+BOOL create_new_file(Node *n)
 {
-	if(file_count >= MAX_NUMBER_OF_FILE)
+	HEXFILE *h = (HEXFILE*)calloc(1, sizeof(HEXFILE));
+	if(h == NULL)
 	{
-		Debug(EMFILE, NULL);
+		errno = ENOMEM;
+		Debug(errno, NULL);
+		return NULL; // Not enought memory.
+	}
+	
+	h->buff = (LPBYTE)farmalloc( 1 );
+	file_count++;
+	h->buff[0] = '\0';
+	h->size = 1;
+	
+	if(AddNext(n, h) == NULL)
+	{
+		farfree((void far*)h->buff);
+		free(h->filename);
+		free(h);
+		Debug(errno, "New element cannot add to list");
 		return FALSE;
 	}
-	h[file_count].buff = (LPBYTE)farmalloc( 1 );
-	cf = file_count;
-	file_count++;
-	h[cf].buff[0] = '\0';
-	h[cf].size = 1;
+	
 	return FALSE;
 }

@@ -10,10 +10,25 @@
 #ifndef _AHTDEFS_H_
 #define _AHTDEFS_H_
 
+// define true-false value
+
+#ifndef TRUE
 #define TRUE 1
+#endif
+
+#ifndef FALSE
 #define FALSE 0
-#deifne true 1
+#endif
+
+#ifndef true
+#define true 1
+#endif
+
+#ifndef false
 #define false 0
+#endif
+
+// define true-false end
 
 #define CONST const
 
@@ -46,6 +61,7 @@ typedef unsigned int 		WORD;
 typedef unsigned char 		BYTE;
 
 typedef int 				BOOL;
+typedef int					bool;
 typedef int 				BOOLEAN;
 
 typedef unsigned char		COLORREF; // ???

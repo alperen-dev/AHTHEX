@@ -1,7 +1,6 @@
 #ifndef _AHTHEX_H_
 #define _AHTHEX_H_
 
-#include "AHTDEFS.H"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -12,6 +11,8 @@
 #include <dir.h>
 #include <time.h>
 #include <io.h>
+#include "AHTDEFS.H"
+#include "LNKLST.H"
 
 extern WORD MAXCOLUMN;
 extern WORD MAXROW;
@@ -63,6 +64,14 @@ extern WORD MAXROW;
 
 #endif
 
+typedef struct tagHEXFILE
+{
+	long col, row, index;
+	long size;
+	LPBYTE buff;
+	char *filename;
+}HEXFILE;
+
 // gfx_card_installition_check
 
 // DOSPROC.C / WINPROC.C
@@ -95,12 +104,12 @@ BOOL debug(CHAR *pStr, ...);
 
 // FILES.C
 long get_file_size(FILE *f); // error: -1
-LPBYTE read_file(VOID);
-BOOL write_file(VOID);
-BOOL save_as(VOID);
-char close_file(VOID);
-BOOL open_file(VOID);
-BOOL create_new_file(VOID);
+LPBYTE read_file(HEXFILE *h);
+BOOL write_file(HEXFILE *h);
+BOOL save_as(HEXFILE *h);
+char close_file(Node *n);
+BOOL open_file(Node *n);
+BOOL create_new_file(Node *n);
 
 
 //OPTIONS.C
@@ -110,16 +119,9 @@ BOOL get_options(VOID);
 BOOL set_options(VOID);
 BOOL options(VOID);
 
-typedef struct tagHEXFILE
-{
-	long col, row, index;
-	long size;
-	LPBYTE buff;
-	char *filename;
-}HEXFILE;
-
-extern HEXFILE h[MAX_NUMBER_OF_FILE];
-extern int file_count, cf; // cf: current_file
+extern Node *n;
+extern HEXFILE *cf;
+extern size_t file_count; // cf: current_file
 
 LPBYTE delete_byte();
 

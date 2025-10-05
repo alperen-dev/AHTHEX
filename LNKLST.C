@@ -26,7 +26,7 @@ Node *CreateList(void *data)
 	return NULL;
 }
 
-// add new node after given node and set data as given data
+// add new node after given node and set data as given data if node is null create list
 Node *AddNext(Node *node, void *data)
 {
 	if(node != NULL)
@@ -42,10 +42,14 @@ Node *AddNext(Node *node, void *data)
 			return newNode;
 		}
 	}
+	else // if node is null create list
+	{
+		return CreateList(data);
+	}
 	return NULL;
 }
 
-// add new node before given node and set data as given data
+// add new node before given node and set data as given data if node is null create list
 Node *AddPrev(Node *node, void *data)
 {
 	if(node != NULL)
@@ -60,6 +64,10 @@ Node *AddPrev(Node *node, void *data)
 			node->prev = newNode;
 			return newNode;
 		}
+	}
+	else // if node is null create list
+	{
+		return CreateList(data);
 	}
 	return NULL;
 }

@@ -9,9 +9,7 @@
 #ifndef _LINKEDLIST_H_
 #define _LINKEDLIST_H_
 
-typedef unsigned char bool;
-#define true (unsigned char)1
-#define false (unsigned char)0
+#include "AHTDEFS.H"
 
 // doubly linked list
 typedef struct _Node
@@ -22,8 +20,8 @@ typedef struct _Node
 }Node;
 
 Node *CreateList(void *data); // Create first node
-Node *AddNext(Node *node, void *data); // add new node after given node and set data as given data
-Node *AddPrev(Node *node, void *data); // add new node before given node and set data as given data
+Node *AddNext(Node *node, void *data); // add new node after given node and set data as given data if node is null create list
+Node *AddPrev(Node *node, void *data); // add new node before given node and set data as given data if node is null create list
 bool DeleteNode(Node *node); // delete given node
 bool DeleteList(Node *node); // delete whole list
 Node *GetNextNode(Node *node); // get next node of given node

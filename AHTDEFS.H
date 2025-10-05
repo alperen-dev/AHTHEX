@@ -12,6 +12,8 @@
 
 #define TRUE 1
 #define FALSE 0
+#deifne true 1
+#define false 0
 
 #define CONST const
 

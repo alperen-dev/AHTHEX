@@ -181,7 +181,7 @@ BOOL open_file(Node *n)
 		{
 			errno = ENOMEM;
 			Debug(errno, NULL);
-			return NULL; // Not enought memory.
+			return FALSE; // Not enought memory.
 		}
 		
 		// get file name from user
@@ -230,7 +230,7 @@ BOOL create_new_file(Node *n)
 	{
 		errno = ENOMEM;
 		Debug(errno, NULL);
-		return NULL; // Not enought memory.
+		return FALSE; // Not enought memory.
 	}
 	
 	h->buff = (LPBYTE)farmalloc( 1 );

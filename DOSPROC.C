@@ -49,7 +49,7 @@ VOID PutStrAttrib(LPSTR lpszStr, DWORD x, DWORD y, BYTE Attribute)
 	}
 }
 
-VOID SetCursorPos(BYTE x, BYTE y)
+VOID SetConCursorPos(BYTE x, BYTE y)
 {
 	union REGS regs = {0};
 	regs.h.ah = 0x02;
@@ -58,7 +58,7 @@ VOID SetCursorPos(BYTE x, BYTE y)
 	int86(0x10, &regs, &regs);
 }
 
-VOID GetCursorPos(BYTE *x, BYTE *y)
+VOID GetConCursorPos(BYTE *x, BYTE *y)
 {
 	union REGS regs = {0};
 	regs.h.ah = 0x03;
@@ -78,7 +78,7 @@ VOID ClearScreen(VOID) // Only in text mode
 	{
 		*lpVidMem++ = 0x0700;
 	}
-	SetCursorPos(0, 0);
+	SetConCursorPos(0, 0);
 }
 
 VOID ClearRow(INT Row) // Only in text mode
@@ -255,7 +255,7 @@ BYTE hexchar_to_byte(BYTE byte[2])
 }
 
 
-VOID Rectangle(LPSTR lpTitle, INT x, INT y, INT w, INT h)
+VOID TUI_Rectangle(LPSTR lpTitle, INT x, INT y, INT w, INT h)
 {
 	INT i = 0;
 	PutChar(201, x, y); // upper left corner
@@ -276,7 +276,7 @@ VOID Rectangle(LPSTR lpTitle, INT x, INT y, INT w, INT h)
 }
 
 
-INT CreateMenu(LPSTR *lpTexts, LPSTR lpTitle, INT ActiveMenu, LONG StartX, LONG StartY)
+INT TUI_CreateMenu(LPSTR *lpTexts, LPSTR lpTitle, INT ActiveMenu, LONG StartX, LONG StartY)
 {
 	CHAR ch;
 	INT i = 0, CurrentMenu = ActiveMenu, MenuCount = 0, LongestText = 0;
@@ -296,7 +296,7 @@ INT CreateMenu(LPSTR *lpTexts, LPSTR lpTitle, INT ActiveMenu, LONG StartX, LONG 
 	if(StartY == DEFAULT_ALIGN)
 		StartY = (MAXROW - MenuCount - 1) / 2;
 	
-	Rectangle(lpTitle, StartX, StartY, LongestText+1, MenuCount+1);
+	TUI_Rectangle(lpTitle, StartX, StartY, LongestText+1, MenuCount+1);
 	
 	do
 	{
@@ -326,6 +326,30 @@ INT CreateMenu(LPSTR *lpTexts, LPSTR lpTitle, INT ActiveMenu, LONG StartX, LONG 
 	return CurrentMenu;
 }
 
+static BYTE GetKbFlags(VOID)
+{
+	union REGS regs = {0};
+	regs.h.ah = 0x02;
+	int86(0x16, &regs, &regs);
+	return regs.h.al;
+}
+
+// check out Ralf's interrupt list
+
+bool CheckShiftState() // both left and right Shift accepted
+{
+	return GetKbFlags() & 0x03;
+}
+
+bool CheckCtrlState()
+{
+	return GetKbFlags() & 0x04;
+}
+
+bool CheckAltState()
+{
+	return GetKbFlags() & 0x08;
+}
 
 #ifdef DEBUG_MODE
 static FILE *log_file = NULL;
@@ -362,7 +386,7 @@ BOOL DebugPrint(INT Errno, LPSTR lpFileName, INT Line, LPSTR lpMessage)
 	if(log_file == NULL)
 		return FALSE;
 	fprintf(log_file, "Date: %02d.%02d.%04d, Time: %02d.%02d.%02d, Errno: %d, File Name: %s, Line: %d\nError: %s\n",
-		t->tm_mday, t->tm_mon, t->tm_year+1900, t->tm_hour, t->tm_min, t->tm_sec, Errno, lpFileName, Line, (lpMessage == NULL ? strerror(Errno) : lpMessage));
+		t->tm_mday, t->tm_mon+1, t->tm_year+1900, t->tm_hour, t->tm_min, t->tm_sec, Errno, lpFileName, Line, (lpMessage == NULL ? strerror(Errno) : lpMessage));
 	DebugClose();
 	#else
 	// unreferance parameters

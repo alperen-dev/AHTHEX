@@ -37,11 +37,18 @@
 	#define NEAR near
 	#define HUGE huge
 #else
+	#define far
 	#define FAR
 	#define NEAR
 	#define HUGE
 #endif
 
+typedef int					bool;
+
+
+typedef unsigned char 		UCHAR;
+
+#ifdef __MSDOS__
 typedef char				CHAR;
 typedef int 				INT;
 typedef long 				LONG;
@@ -51,7 +58,6 @@ typedef float				FLOAT;
 
 typedef const char 			CCHAR;
 
-typedef unsigned char 		UCHAR;
 typedef unsigned int		UINT;
 typedef unsigned long 		ULONG;
 typedef unsigned short		USHORT;
@@ -61,7 +67,6 @@ typedef unsigned int 		WORD;
 typedef unsigned char 		BYTE;
 
 typedef int 				BOOL;
-typedef int					bool;
 typedef int 				BOOLEAN;
 
 typedef unsigned char		COLORREF; // ???
@@ -98,5 +103,6 @@ typedef FAR CHAR* 			LPSTR;
 typedef FAR VOID* 			LPVOID;
 typedef FAR WORD* 			LPWORD;
 typedef FAR BYTE* 			LPBYTE;
+#endif // __MSDOS__
 
 #endif /* _AHTDEFS_H_ */

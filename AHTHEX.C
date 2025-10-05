@@ -22,6 +22,7 @@ bool print_to_console(LPBYTE buff, long number_of_char)
 	{
 		long i = 0;
 		long first_row = MAX(cf->index - (cf->row * 16 + cf->col), 0L); // ilk satiri 0'dan buyuk satir numaralari icin
+		
 		if(buff == NULL)
 		{
 			Debug(EINVAL, "buff = NULL");
@@ -55,7 +56,7 @@ bool print_to_console(LPBYTE buff, long number_of_char)
 			}
 			put_hex_and_char_value(buff[i], i % 16, i / 16);
 		}
-		SetCursorPos(0, MAXROW-1);
+		SetConCursorPos(0, MAXROW-1);
 		switch(opt_offset_base)
 		{
 			case HEX:
@@ -163,9 +164,9 @@ void control_keys(BYTE secondaryByte)
 			n = GetPrevNode(n);
 			cf = (HEXFILE*)GetData(n);
 		break;
-		case KB_ALT_S: // save as (TODO!!!)
-			save_as(cf);
-		break;
+		//case KB_ALT_S: // save as (TODO!!!)
+		//	save_as(cf);
+		//break;
 		case KB_ALT_O:
 			options();
 		break;
@@ -182,7 +183,7 @@ BOOL change_value(int type)
 		Debug(EINVAL, "cf->buff = NULL");
 		return FALSE;
 	}
-	SetCursorPos(0, 0);
+	SetConCursorPos(0, 0);
 	printf("\t\t\t\t\t\t\t\t");
 	if(type == HEX)
 	{
@@ -210,7 +211,7 @@ BOOL change_value(int type)
 		put_hex_and_char_value(ch, cf->col, cf->row);
 		ChangeCharAttrib(0x70, 61 + cf->col, cf->row + 2); // ascii value, reverse
 	}
-	SetCursorPos(0, MAXROW-1);
+	SetConCursorPos(0, MAXROW-1);
 	return TRUE;
 }
 
@@ -224,7 +225,7 @@ LPBYTE add_byte()
 		return NULL;
 	}
 	
-	if( (temp = (LPBYTE)farrealloc((BYTE far*)cf->buff, cf->size+1)) != NULL)
+	if( (temp = (LPBYTE)farrealloc((UCHAR far*)cf->buff, cf->size+1)) != NULL)
 	{
 		cf->buff = temp;
 		cf->buff[ cf->size ] = '\0';
@@ -258,7 +259,7 @@ LPBYTE delete_byte()
 		{
 			cf->buff[i] = cf->buff[i+1];
 		}
-		return cf->buff = farrealloc((unsigned char far*)cf->buff, --cf->size);
+		return cf->buff = farrealloc((UCHAR far*)cf->buff, --cf->size);
 	}
 	return cf->buff;
 }
@@ -274,7 +275,7 @@ BOOL find_value(int type)
 		return FALSE;
 	}
 	
-	SetCursorPos(0, MAXROW-1);
+	SetConCursorPos(0, MAXROW-1);
 	ClearRow(MAXROW-1);
 	
 	if((value = malloc(1024*sizeof(char))) == NULL)
@@ -304,7 +305,7 @@ BOOL find_value(int type)
 	}
 	if((ptr = _farmemsearch(&(cf->buff[cf->index+1]) , (LPSTR)value, cf->size - cf->index - 1, value_length)) == NULL)
 	{
-		SetCursorPos(0, MAXROW-1);
+		SetConCursorPos(0, MAXROW-1);
 		ClearRow(MAXROW-1);
 		printf("Not found!");
 		getch();
@@ -315,7 +316,7 @@ BOOL find_value(int type)
 	}
 	
 	free(value);
-	SetCursorPos(0, MAXROW-1);
+	SetConCursorPos(0, MAXROW-1);
 	return TRUE;
 }
 
@@ -358,11 +359,13 @@ void help_screen(void)
 
 int main(int argc, char **argv)
 {
-	char ch = 0;
+	unsigned char ch = 0;
 	size_t i = 0;
 	BYTE CurrentVideoMode = GetVideoMode();
 	
 	get_options();
+	
+	
 	
 	if(argc > MAX_NUMBER_OF_FILE+1)
 	{
@@ -403,13 +406,14 @@ int main(int argc, char **argv)
 	n = GetNextNode(n); // start at first parameter
 	
 	
+	
 	if(file_count == 0)
 	{
 		create_new_file(n);
 	}
 	
 	do
-	{
+	{		
 		cf = (HEXFILE*)n->data;
 		print_to_console(&( cf->buff[ cf->index - (cf->col + cf->row * 16) ] ),
 			MIN( (cf->col + 1 + cf->row * 16) + (cf->size-1-cf->index) , 16*(MAXROW-3)) );
@@ -447,7 +451,7 @@ int main(int argc, char **argv)
 			case 'G': // go to address
 			{
 				long index = 0;
-				SetCursorPos(0, 0);
+				SetConCursorPos(0, 0);
 				printf("\t\t\t\t\t\t\t\t\rgo to index(d): ");
 				scanf(opt_offset_base == HEX ? "%lx" : (opt_offset_base == DEC ? "%ld" : (opt_offset_base == OCT ? "%lo" : "%lx")), &index);
 				goto_cursor(index, index/16);

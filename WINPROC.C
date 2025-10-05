@@ -1,4 +1,3 @@
-#include <windows.h>
 #include "AHTHEX.H"
 
 VOID SetVideoMode(BYTE VideoMode) // Do NOTHING
@@ -20,16 +19,16 @@ VOID PutChar(BYTE ch, DWORD x, DWORD y)
 {
 	CONSOLE_SCREEN_BUFFER_INFO info;
 	GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &info);
-	CHAR_INFO ch;
+	CHAR_INFO chi;
 	COORD cor = {0, 0};
 	SMALL_RECT smr;
 	smr.Top = y;
 	smr.Bottom = y;
 	smr.Left = x;
 	smr.Right = x;
-	ReadConsoleOutputA(GetStdHandle(STD_OUTPUT_HANDLE), &ch, info.dwSize, cor, &smr);
-	ch.Char.AsciiChar = ch;
-	WriteConsoleOutput(GetStdHandle(STD_OUTPUT_HANDLE), &ch, info.dwSize, cor, &smr);
+	ReadConsoleOutputA(GetStdHandle(STD_OUTPUT_HANDLE), &chi, info.dwSize, cor, &smr);
+	chi.Char.AsciiChar = ch;
+	WriteConsoleOutput(GetStdHandle(STD_OUTPUT_HANDLE), &chi, info.dwSize, cor, &smr);
 }
 
 VOID ChangeCharAttrib(BYTE Attrib, DWORD x, DWORD y)
@@ -69,37 +68,46 @@ VOID PutStrAttrib(LPSTR lpszStr, DWORD x, DWORD y, BYTE Attribute)
 	}
 }
 
-VOID SetCursorPos(BYTE x, BYTE y)
+VOID SetConCursorPos(BYTE x, BYTE y)
 {
 	COORD pos = {x, y};
 	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), pos);
 }
 
-VOID GetCursorPos(BYTE *x, BYTE *y)
+VOID GetConCursorPos(BYTE *x, BYTE *y)
 {
 	CONSOLE_SCREEN_BUFFER_INFO info;
 	GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &info);
 	if(x != NULL)
-		*x = regs.h.dl;
+		*x = info.dwCursorPosition.X;
 	if(y != NULL)
-		*y = regs.h.dh;
+		*y = info.dwCursorPosition.Y;
 }
 
-VOID ClearScreen(VOID) // Only in text mode
+// gpt4 generated function
+VOID ClearScreen(VOID)
 {
-	CONSOLE_SCREEN_BUFFER_INFO info;
-	GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &info);
-	CHAR_INFO ch;
-	COORD cor = {0, 0};
-	SMALL_RECT smr;
-	smr.Top = 0;
-	smr.Bottom = 24;
-	smr.Left = 0;
-	smr.Right = 79;
-	ch.Attributes = Attrib;
-	ch.Char.AsciiChar = '\0';
-	WriteConsoleOutput(GetStdHandle(STD_OUTPUT_HANDLE), &ch, info.dwSize, cor, &smr);
-	SetCursorPos(0, 0);
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    DWORD cellsWritten;
+    DWORD consoleSize;
+    COORD home = {0, 0};
+
+    if (!GetConsoleScreenBufferInfo(hConsole, &csbi)) {
+        return;
+    }
+
+    // Calculate total cells in buffer
+    consoleSize = csbi.dwSize.X * csbi.dwSize.Y;
+
+    // Fill console with spaces
+    FillConsoleOutputCharacter(hConsole, ' ', consoleSize, home, &cellsWritten);
+
+    // Reset attributes too (optional)
+    FillConsoleOutputAttribute(hConsole, csbi.wAttributes, consoleSize, home, &cellsWritten);
+
+    // Move cursor back to top-left
+    SetConsoleCursorPosition(hConsole, home);
 }
 
 VOID ClearRow(INT Row) // Only in text mode
@@ -113,7 +121,7 @@ VOID ClearRow(INT Row) // Only in text mode
 	smr.Bottom = Row;
 	smr.Left = 0;
 	smr.Right = 79;
-	ch.Attributes = Attrib;
+	ch.Attributes = 0;
 	ch.Char.AsciiChar = '\0';
 	WriteConsoleOutput(GetStdHandle(STD_OUTPUT_HANDLE), &ch, info.dwSize, cor, &smr);
 }
@@ -168,7 +176,7 @@ BYTE hexchar_to_byte(BYTE byte[2])
 	return byte[0] * 16 + byte[1];
 }
 
-VOID Rectangle(LPSTR lpTitle, INT x, INT y, INT w, INT h)
+VOID TUI_Rectangle(LPSTR lpTitle, INT x, INT y, INT w, INT h)
 {
 	INT i = 0;
 	PutChar(201, x, y); // upper left corner
@@ -188,7 +196,7 @@ VOID Rectangle(LPSTR lpTitle, INT x, INT y, INT w, INT h)
 	PutStr(lpTitle, x+1+(w - _farstrlen(lpTitle)) / 2, y);
 }
 
-INT CreateMenu(LPSTR *lpTexts, LPSTR lpTitle, INT ActiveMenu, LONG StartX, LONG StartY)
+INT TUI_CreateMenu(LPSTR *lpTexts, LPSTR lpTitle, INT ActiveMenu, LONG StartX, LONG StartY)
 {
 	CHAR ch;
 	INT i = 0, CurrentMenu = ActiveMenu, MenuCount = 0, LongestText = 0;
@@ -208,7 +216,7 @@ INT CreateMenu(LPSTR *lpTexts, LPSTR lpTitle, INT ActiveMenu, LONG StartX, LONG 
 	if(StartY == DEFAULT_ALIGN)
 		StartY = (MAXROW - MenuCount - 1) / 2;
 	
-	Rectangle(lpTitle, StartX, StartY, LongestText+1, MenuCount+1);
+	TUI_Rectangle(lpTitle, StartX, StartY, LongestText+1, MenuCount+1);
 	
 	do
 	{
@@ -238,6 +246,21 @@ INT CreateMenu(LPSTR *lpTexts, LPSTR lpTitle, INT ActiveMenu, LONG StartX, LONG 
 	return CurrentMenu;
 }
 
+bool CheckShiftState() // both left and right Shift accepted
+{
+	return !!(GetAsyncKeyState(VK_SHIFT) & 0x8000); // !! for convert to bool (its actually bad idea)
+}
+
+bool CheckCtrlState()
+{
+	return !!(GetAsyncKeyState(VK_CONTROL) & 0x8000);
+}
+
+bool CheckAltState()
+{
+	return !!(GetAsyncKeyState(VK_MENU) & 0x8000);
+}
+
 #ifdef DEBUG_MODE
 static FILE *log_file = NULL;
 #endif
@@ -245,7 +268,7 @@ static FILE *log_file = NULL;
 BOOL DebugInit(VOID)
 {
 	#ifdef DEBUG_MODE
-	if( (log_file = fopen("AHTHEX.LOG", "a") ) == NULL)
+	if( (log_file = fopen("AHTHEXW.LOG", "a") ) == NULL)
 	{
 		return FALSE;
 	}

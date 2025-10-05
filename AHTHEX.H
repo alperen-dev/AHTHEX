@@ -1,14 +1,20 @@
 #ifndef _AHTHEX_H_
 #define _AHTHEX_H_
 
+#ifdef __MSDOS__
+#include <dos.h>
+#include <alloc.h>
+#include <dir.h>
+#elif defined __WINDOWS__ || defined __WIN32__ || defined __WIN64__ || defined WIN32 || defined WIN64
+#include <windows.h>
+#endif
+
+#include <errno.h>
+#include <conio.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include <dos.h>
-#include <errno.h>
-#include <alloc.h>
-#include <dir.h>
 #include <time.h>
 #include <io.h>
 #include "AHTDEFS.H"
@@ -24,7 +30,7 @@ extern WORD MAXROW;
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 
-#define DEFAULT_ALIGN -1 // used in CreateMenu() function
+#define DEFAULT_ALIGN -1 // used in TUI_CreateMenu() function
 
 #define MAX_NUMBER_OF_FILE 32
 
@@ -61,7 +67,39 @@ extern WORD MAXROW;
 	#define KB_BACKSPACE 8
 	#define KB_DEL 83 // control
 #elif defined __WINDOWS__ || defined __WIN32__ || defined __WIN64__ || defined WIN32 || defined WIN64
+	#define KB_ESC 27
+	#define KB_CONTROL 224
+	#define KB_UP 72
+	#define KB_DOWN 80
+	#define KB_LEFT 75
+	#define KB_RIGHT 77
+	#define KB_RETURN 13
+	#define KB_CTRL_RETURN 10
+	#define KB_PG_UP 73
+	#define KB_PG_DOWN 81
+	#define KB_HOME 71
+	#define KB_END 79
+	#define KB_CTRL_F 6
+	#define KB_CTRL_RIGHT 116
+	#define KB_CTRL_LEFT 115
+	#define KB_CTRL_S 19
+	#define KB_ALT_S 115
+	#define KB_CTRL_X 24
+	#define KB_CTRL_N 14
+	#define KB_CTRL_O 15
+	#define KB_ALT_O 111
+	#define KB_BACKSPACE 8
+	#define KB_DEL 83 // control
+#endif
 
+#if defined __WINDOWS__ || defined __WIN32__ || defined __WIN64__ || defined WIN32 || defined WIN64
+
+	#define MAXPATH MAX_PATH
+	
+	#define farmalloc malloc
+	#define farcalloc calloc
+	#define farrealloc realloc
+	#define farfree free
 #endif
 
 typedef struct tagHEXFILE
@@ -80,8 +118,8 @@ BYTE GetVideoMode(VOID);
 VOID PutChar(BYTE ch, DWORD x, DWORD y);
 VOID ChangeCharAttrib(BYTE Attrib, DWORD x, DWORD y);
 VOID PutStr(LPSTR lpszStr, DWORD x, DWORD y);
-VOID SetCursorPos(BYTE x, BYTE y);
-VOID GetCursorPos(BYTE *x, BYTE *y);
+VOID SetConCursorPos(BYTE x, BYTE y);
+VOID GetConCursorPos(BYTE *x, BYTE *y);
 VOID ClearScreen(VOID);
 VOID ClearRow(INT Row);
 
@@ -92,7 +130,11 @@ LPSTR _farmemsearch(LPSTR s1, LPSTR s2, LONG s1_length, LONG s2_length);
 
 BYTE hexchar_to_byte(BYTE byte[2]); // example:  "F2" -> 0xF2
 
-INT CreateMenu(LPSTR *lpTexts, LPSTR lpTitle, INT ActiveMenu, LONG StartX, LONG StartY);
+INT TUI_CreateMenu(LPSTR *lpTexts, LPSTR lpTitle, INT ActiveMenu, LONG StartX, LONG StartY);
+
+bool CheckShiftState();
+bool CheckCtrlState();
+bool CheckAltState();
 
 #define Debug(errno, message) DebugPrint(errno, __FILE__, __LINE__, message)
 

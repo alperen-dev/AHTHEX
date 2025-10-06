@@ -105,4 +105,60 @@ typedef FAR WORD* 			LPWORD;
 typedef FAR BYTE* 			LPBYTE;
 #endif // __MSDOS__
 
+// TUI
+#ifdef __MSDOS__
+	#define DOUBLY_TOP_LEFT 	((unsigned char)201)
+	#define DOUBLY_TOP_RIGHT 	((unsigned char)187)
+	#define DOUBLY_BOTTOM_LEFT 	((unsigned char)200)
+	#define DOUBLY_BOTTOM_RIGHT ((unsigned char)188)
+	#define DOUBLY_VERTICAL		((unsigned char)186)
+	#define DOUBLY_HORIZONTAL	((unsigned char)205)
+	
+	#define DOUBLY_TOP_CROSS	((unsigned char)203)
+	#define DOUBLY_BOTTOM_CROSS	((unsigned char)202)
+	#define DOUBLY_LEFT_CROSS	((unsigned char)204)
+	#define DOUBLY_RIGHT_CROSS	((unsigned char)185)
+	#define DOUBLY_CROSS		((unsigned char)206)
+	
+	#define SINGLY_TOP_LEFT 	((unsigned char)218)
+	#define SINGLY_TOP_RIGHT 	((unsigned char)191)
+	#define SINGLY_BOTTOM_LEFT 	((unsigned char)192)
+	#define SINGLY_BOTTOM_RIGHT ((unsigned char)217)
+	#define SINGLY_VERTICAL		((unsigned char)179)
+	#define SINGLY_HORIZONTAL	((unsigned char)196)
+	
+	#define SINGLY_TOP_CROSS	((unsigned char)194)
+	#define SINGLY_BOTTOM_CROSS	((unsigned char)193)
+	#define SINGLY_LEFT_CROSS	((unsigned char)195)
+	#define SINGLY_RIGHT_CROSS	((unsigned char)180)
+	#define SINGLY_CROSS		((unsigned char)197)
+	
+#elif defined __WINDOWS__ || defined __WIN32__ || defined __WIN64__ || defined WIN32 || defined WIN64
+	#define DOUBLY_TOP_LEFT 	((unsigned char)201)
+	#define DOUBLY_TOP_RIGHT 	((unsigned char)187)
+	#define DOUBLY_BOTTOM_LEFT 	((unsigned char)200)
+	#define DOUBLY_BOTTOM_RIGHT ((unsigned char)188)
+	#define DOUBLY_VERTICAL		((unsigned char)186)
+	#define DOUBLY_HORIZONTAL	((unsigned char)205)
+	
+	#define DOUBLY_TOP_CROSS	((unsigned char)203)
+	#define DOUBLY_BOTTOM_CROSS	((unsigned char)202)
+	#define DOUBLY_LEFT_CROSS	((unsigned char)204)
+	#define DOUBLY_RIGHT_CROSS	((unsigned char)185)
+	#define DOUBLY_CROSS		((unsigned char)206)
+	
+	#define SINGLY_TOP_LEFT 	((unsigned char)218)
+	#define SINGLY_TOP_RIGHT 	((unsigned char)191)
+	#define SINGLY_BOTTOM_LEFT 	((unsigned char)192)
+	#define SINGLY_BOTTOM_RIGHT ((unsigned char)217)
+	#define SINGLY_VERTICAL		((unsigned char)179)
+	#define SINGLY_HORIZONTAL	((unsigned char)196)
+	
+	#define SINGLY_TOP_CROSS	((unsigned char)194)
+	#define SINGLY_BOTTOM_CROSS	((unsigned char)193)
+	#define SINGLY_LEFT_CROSS	((unsigned char)195)
+	#define SINGLY_RIGHT_CROSS	((unsigned char)180)
+	#define SINGLY_CROSS		((unsigned char)197)
+#endif
+
 #endif /* _AHTDEFS_H_ */

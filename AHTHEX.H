@@ -130,7 +130,7 @@ LPSTR _farmemsearch(LPSTR s1, LPSTR s2, LONG s1_length, LONG s2_length);
 
 BYTE hexchar_to_byte(BYTE byte[2]); // example:  "F2" -> 0xF2
 
-INT TUI_CreateMenu(LPSTR *lpTexts, LPSTR lpTitle, INT ActiveMenu, LONG StartX, LONG StartY);
+INT TUI_CreateMenu(LPSTR *lpTexts, LPSTR lpTitle, INT ActiveMenu, LONG StartX, LONG StartY, BOOL bIsDoubly);
 
 bool CheckShiftState();
 bool CheckCtrlState();

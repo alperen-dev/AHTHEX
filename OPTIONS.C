@@ -3,13 +3,18 @@
 WORD opt_offset_base = HEX; // HEX, DEC, OCT
 WORD opt_row_number = 25; // 25, 43, 50
 
+INT TUI_CreateOptionsWindow()
+{
+	
+}
+
 static VOID set_offset_base(VOID)
 {
 	WORD temp = 0;
 	LPSTR lpTexts[] = {"Hexadecimal", "Decimal", "Octal", "Back", NULL};
 	ClearScreen();
 	SetConCursorPos(0, 25);
-	temp = TUI_CreateMenu(lpTexts, "Set Offset Base", opt_offset_base, DEFAULT_ALIGN, DEFAULT_ALIGN);
+	temp = TUI_CreateMenu(lpTexts, "Set Offset Base", opt_offset_base, DEFAULT_ALIGN, DEFAULT_ALIGN, TRUE);
 	if(temp < 3) // Not "Back" button
 		opt_offset_base = temp;
 }
@@ -22,7 +27,7 @@ static VOID set_screen_resolution(VOID)
 	SetConCursorPos(0, 25);
 	temp = TUI_CreateMenu(lpTexts, "Set Screen Resolution", 
 		opt_row_number == 25 ? 0 : (opt_row_number == 43 ? 1 : (opt_row_number == 50 ? 2 : 3)),
-		DEFAULT_ALIGN, DEFAULT_ALIGN);
+		DEFAULT_ALIGN, DEFAULT_ALIGN, TRUE);
 	if(temp < 3) // Not "Back" button
 	{
 		opt_row_number = temp == 0 ? 25 : (temp == 1 ? 43 : (temp == 2 ? 50: opt_row_number));
@@ -65,7 +70,7 @@ BOOL options(VOID)
 	{
 		ClearScreen();
 		SetConCursorPos(0, 25);
-		temp = TUI_CreateMenu(lpTexts, "Options", 0, DEFAULT_ALIGN, DEFAULT_ALIGN);
+		temp = TUI_CreateMenu(lpTexts, "Options", 0, DEFAULT_ALIGN, DEFAULT_ALIGN, TRUE);
 		if(temp < ButtonCount) // Not "Back" button
 			options_proc[temp]();
 	}while(temp != ButtonCount); // Not "Back" button

@@ -97,7 +97,7 @@ BOOL goto_cursor(long index, long row)
 {
 	if(cf->buff == NULL)
 	{
-		Debug(EINVAL, "cf->.buff = NULL");
+		Debug(EINVAL, "cf->buff = NULL");
 		return FALSE;
 	}
 	else if(cf->size < 0)
@@ -322,7 +322,7 @@ BOOL find_value(int type)
 
 void help_screen(void)
 {
-	ClearScreen();
+	ClearScreen(); // konu olarak ayir
 	printf( "Keys:\n"
 			" H --> help screen\n" 
 			" Arrow keys, Page Up, Page Down --> move cursor\n"
@@ -330,6 +330,9 @@ void help_screen(void)
 			" End --> Goto index last\n"
 			" CTRL + Right --> Next file\n"
 			" CTRL + Left --> Previous file\n"
+			" CTRL + S --> Save\n"
+			" CTRL + ALT + S --> Save as...\n"
+			" CTRL + SHIFT + S --> Save all\n"
 			" A --> Add new byte to the end of current file\n"
 			" I --> Insert new byte to current file\n"
 			" Backspace or Delete --> Delete byte from current file\n"

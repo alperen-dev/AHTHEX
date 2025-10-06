@@ -255,28 +255,48 @@ BYTE hexchar_to_byte(BYTE byte[2])
 }
 
 
-VOID TUI_Rectangle(LPSTR lpTitle, INT x, INT y, INT w, INT h)
+VOID TUI_Rectangle(LPSTR lpTitle, INT x, INT y, INT w, INT h, BOOL bIsDoubly)
 {
 	INT i = 0;
-	PutChar(201, x, y); // upper left corner
-	PutChar(187, x+w, y); // upper right corner
-	PutChar(200, x, y+h); // lower left corner
-	PutChar(188, x+w, y+h); // lower right corner
-	for(i = 0; i < w-1; i++)
+	if(bIsDoubly)
 	{
-		PutChar(205, x+i+1, y);
-		PutChar(205, x+i+1, y+h);
+		PutChar(DOUBLY_TOP_LEFT, x, y); // upper left corner
+		PutChar(DOUBLY_TOP_RIGHT, x+w, y); // upper right corner
+		PutChar(DOUBLY_BOTTOM_LEFT, x, y+h); // lower left corner
+		PutChar(DOUBLY_BOTTOM_RIGHT, x+w, y+h); // lower right corner
+		for(i = 0; i < w-1; i++)
+		{
+			PutChar(DOUBLY_HORIZONTAL, x+i+1, y);
+			PutChar(DOUBLY_HORIZONTAL, x+i+1, y+h);
+		}
+		for(i = 0; i < h-1; i++)
+		{
+			PutChar(DOUBLY_VERTICAL, x, y+i+1);
+			PutChar(DOUBLY_VERTICAL, x+w, y+i+1);
+		}
 	}
-	for(i = 0; i < h-1; i++)
+	else if(bIsDoubly == FALSE)
 	{
-		PutChar(186, x, y+i+1);
-		PutChar(186, x+w, y+i+1);
+		PutChar(SINGLY_TOP_LEFT, x, y); // upper left corner
+		PutChar(SINGLY_TOP_RIGHT, x+w, y); // upper right corner
+		PutChar(SINGLY_BOTTOM_LEFT, x, y+h); // lower left corner
+		PutChar(SINGLY_BOTTOM_RIGHT, x+w, y+h); // lower right corner
+		for(i = 0; i < w-1; i++)
+		{
+			PutChar(SINGLY_HORIZONTAL, x+i+1, y);
+			PutChar(SINGLY_HORIZONTAL, x+i+1, y+h);
+		}
+		for(i = 0; i < h-1; i++)
+		{
+			PutChar(SINGLY_VERTICAL, x, y+i+1);
+			PutChar(SINGLY_VERTICAL, x+w, y+i+1);
+		}
 	}
 	PutStr(lpTitle, x+1+(w - _farstrlen(lpTitle)) / 2, y);
 }
 
 
-INT TUI_CreateMenu(LPSTR *lpTexts, LPSTR lpTitle, INT ActiveMenu, LONG StartX, LONG StartY)
+INT TUI_CreateMenu(LPSTR *lpTexts, LPSTR lpTitle, INT ActiveMenu, LONG StartX, LONG StartY, BOOL bIsDoubly)
 {
 	CHAR ch;
 	INT i = 0, CurrentMenu = ActiveMenu, MenuCount = 0, LongestText = 0;
@@ -296,7 +316,7 @@ INT TUI_CreateMenu(LPSTR *lpTexts, LPSTR lpTitle, INT ActiveMenu, LONG StartX, L
 	if(StartY == DEFAULT_ALIGN)
 		StartY = (MAXROW - MenuCount - 1) / 2;
 	
-	TUI_Rectangle(lpTitle, StartX, StartY, LongestText+1, MenuCount+1);
+	TUI_Rectangle(lpTitle, StartX, StartY, LongestText+1, MenuCount+1, bIsDoubly);
 	
 	do
 	{

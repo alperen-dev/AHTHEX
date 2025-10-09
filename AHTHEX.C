@@ -366,6 +366,8 @@ int main(int argc, char **argv)
 	size_t i = 0;
 	BYTE CurrentVideoMode = GetVideoMode();
 	
+	GetInput();
+	
 	get_options();
 	
 	

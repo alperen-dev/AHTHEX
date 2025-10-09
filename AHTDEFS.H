@@ -43,8 +43,16 @@
 	#define HUGE
 #endif
 
-typedef int					bool;
-
+// define bool
+#ifndef __cplusplus
+	#if __STDC_VERSION__ >= 199901L
+		#include <stdbool.h>
+	#elif !defined bool
+		typedef int bool;
+		#define true  1
+		#define false 0
+	#endif
+#endif
 
 typedef unsigned char 		UCHAR;
 
@@ -75,22 +83,22 @@ typedef long 				LRESULT;
 typedef void (FAR *FARPROC)(void);
 typedef void (NEAR *PROC)(void);
 
-typedef NEAR BOOL* 			PBOOL;
-typedef NEAR BOOLEAN* 		PBOOLEAN;
-typedef NEAR CCHAR*			PCCH, PCSTR;
-typedef NEAR CHAR* 			PCH, PCHAR, PSTR, PSZ;
-typedef NEAR FLOAT*			PFLOAT;
-typedef NEAR INT* 			PINT;
-typedef NEAR LONG* 			PLONG;
-typedef NEAR SHORT*			PSHORT;
-typedef NEAR VOID* 			PVOID;
-typedef NEAR DWORD*			PDWORD;
-typedef NEAR WORD* 			PWORD;
-typedef NEAR BYTE* 			PBYTE;
-typedef NEAR UCHAR*			PUCHAR;
-typedef NEAR UINT* 			PUINT;
-typedef NEAR ULONG*			PULONG;
-typedef NEAR USHORT* 		PUSHORT;
+typedef BOOL* 				PBOOL;
+typedef BOOLEAN* 			PBOOLEAN;
+typedef CCHAR*				PCCH, PCSTR;
+typedef CHAR* 				PCH, PCHAR, PSTR, PSZ;
+typedef FLOAT*				PFLOAT;
+typedef INT* 				PINT;
+typedef LONG* 				PLONG;
+typedef SHORT*				PSHORT;
+typedef VOID* 				PVOID;
+typedef DWORD*				PDWORD;
+typedef WORD* 				PWORD;
+typedef BYTE* 				PBYTE;
+typedef UCHAR*				PUCHAR;
+typedef UINT* 				PUINT;
+typedef ULONG*				PULONG;
+typedef USHORT* 			PUSHORT;
 
 typedef FAR BOOL* 			LPBOOL;
 typedef FAR CCHAR* 			LPCCH, LPCSTR;

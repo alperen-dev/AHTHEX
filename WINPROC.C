@@ -281,6 +281,32 @@ bool CheckAltState()
 	return !!(GetAsyncKeyState(VK_MENU) & 0x8000);
 }
 
+INPUTKEY *GetInput(VOID)
+{
+	INPUT_RECORD ir;
+	INPUTKEY *ik = (INPUTKEY*)malloc(sizeof(INPUTKEY));
+	HANDLE hInput = GetStdHandle(STD_INPUT_HANDLE);
+	DWORD dwInputRead = 0;
+	if(ik == NULL || hInput == NULL)
+	{
+		Debug(GetLastError(), "ik or hInput is NULL");
+		return NULL;
+	}
+	if(ReadConsoleInput(hInput, &ir, (DWORD)1, &dwInputRead) == 0) // when error return 0 value
+	{
+		Debug(GetLastError(), "ReadConsoleInput");
+		return NULL;
+	}
+	if (ir.EventType == KEY_EVENT && ir.Event.KeyEvent.bKeyDown)
+	{
+		ik->bAsciiCode = ir.Event.KeyEvent.wVirtualKeyCode;
+		ik->bScanCode = ir.Event.KeyEvent.wVirtualScanCode;
+		//ik->bShiftState = ir.Event.
+		return ik;
+	}
+	
+}
+
 #ifdef DEBUG_MODE
 static FILE *log_file = NULL;
 #endif

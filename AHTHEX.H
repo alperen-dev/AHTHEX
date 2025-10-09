@@ -113,6 +113,15 @@ typedef struct tagHEXFILE
 // gfx_card_installition_check
 
 // DOSPROC.C / WINPROC.C
+typedef struct _INPUTKEY
+{
+	WORD bAsciiCode;
+	WORD bScanCode;
+	BYTE bShiftState;
+	BYTE bCtrlState;
+	BYTE bAltState;
+}INPUTKEY;
+
 VOID SetVideoMode(BYTE VideoMode);
 BYTE GetVideoMode(VOID);
 VOID PutChar(BYTE ch, DWORD x, DWORD y);
@@ -130,11 +139,13 @@ LPSTR _farmemsearch(LPSTR s1, LPSTR s2, LONG s1_length, LONG s2_length);
 
 BYTE hexchar_to_byte(BYTE byte[2]); // example:  "F2" -> 0xF2
 
+VOID TUI_Rectangle(LPSTR lpTitle, INT x, INT y, INT w, INT h, BOOL bIsDoubly);
 INT TUI_CreateMenu(LPSTR *lpTexts, LPSTR lpTitle, INT ActiveMenu, LONG StartX, LONG StartY, BOOL bIsDoubly);
 
 bool CheckShiftState();
 bool CheckCtrlState();
 bool CheckAltState();
+INPUTKEY *GetInput(VOID);
 
 #define Debug(errno, message) DebugPrint(errno, __FILE__, __LINE__, message)
 

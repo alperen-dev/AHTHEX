@@ -3,11 +3,6 @@
 WORD opt_offset_base = HEX; // HEX, DEC, OCT
 WORD opt_row_number = 25; // 25, 43, 50
 
-INT TUI_CreateOptionsWindow()
-{
-	
-}
-
 static VOID set_offset_base(VOID)
 {
 	WORD temp = 0;
@@ -70,6 +65,7 @@ BOOL options(VOID)
 	{
 		ClearScreen();
 		SetConCursorPos(0, 25);
+		TUI_Rectangle("OPTIONS", 0, 0, MAXCOLUMN, MAXROW, TRUE);
 		temp = TUI_CreateMenu(lpTexts, "Options", 0, DEFAULT_ALIGN, DEFAULT_ALIGN, TRUE);
 		if(temp < ButtonCount) // Not "Back" button
 			options_proc[temp]();

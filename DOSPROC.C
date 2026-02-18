@@ -2,8 +2,9 @@
 #include <stdio.h>
 #include <dos.h>
 #include <i86.h>
+#include <assert.h>
 
-
+#define GET_SCREEN_WIDTH() peek(0x0040, 0x004A)
 
 /* ANSI.SYS or something similar function tool check */
 #define ANSI_DSR_MAX_ATTEMPT 30000
@@ -16,6 +17,21 @@ typedef enum
 }AnsiSupport;
 AnsiSupport ansiSupport = ANSI_SUPPORT_UNKNOWN;
 
+typedef struct
+{
+	uint8_t row;
+	uint8_t col;
+}COORD;
+
+uint16_t get_video_mode_and_active_page(void);
+uint8_t get_active_page(void);
+uint8_t get_video_mode(void);
+void set_cursor_pos(uint8_t col, uint8_t row);
+COORD get_cursor_pos(void);
+uint8_t get_cursor_x(void);
+uint8_t get_cursor_y(void);
+static bool vram_cread(uint8_t *buffer, size_t length); /* read characters from current cursor position */
+
 static bool check_ansi_interrupt(void)
 {
 	union REGS regs;
@@ -26,6 +42,36 @@ static bool check_ansi_interrupt(void)
 	return false;
 }
 
+static bool check_ansi_vram(void)
+{
+	union REGS regs;
+	uint16_t orjBuffer[3];
+	bool has_ansi = false;
+	COORD orjPos;
+	uint8_t videoMode = get_video_mode();
+	
+	if(videoMode > 0x03 && videoMode != 0x07) /* if not in text mode, don't try */
+	{
+		return false;
+	}
+	
+	orjPos = get_cursor_pos();
+	set_cursor_pos(0, 0);
+	
+	get_from_cursor_pos(orjBuffer, 3);
+	
+	printf("\x1B[s");
+	
+	if(get_cursor_x() > 0)
+	{
+		
+	}
+	
+	set_cursor_pos(orjPos.col, orjPos.row);
+	return has_ansi;
+}
+
+#if 0
 /* DSR -> device status report */
 static bool check_ansi_dsr(void)
 {
@@ -51,6 +97,7 @@ static bool check_ansi_dsr(void)
 	printf("\b\b\b\b    \b\b\b\b"); /* clear consol buffer if ANSI driver is not found, its already clean if found */
 	return false;
 }
+#endif
 
 bool is_ansi_supported(void)
 {
@@ -71,9 +118,101 @@ bool is_ansi_supported(void)
 	return false; /* ANSI driver not found */
 }
 
+/* lower 8 byte video mode, higher 8 byte active page */
+uint16_t get_video_mode_and_active_page(void)
+{
+	union REGS regs = {0};
+	regs.h.ah = 0x0F;
+	int86(0x10, &regs, &regs);
+	return (regs.h.bh << 8U) | regs.h.al;
+}
 
+uint8_t get_active_page(void)
+{
+	union REGS regs = {0};
+	regs.h.ah = 0x0F;
+	int86(0x10, &regs, &regs);
+	return regs.h.bh;
+}
 
-static char *VIDMEM = (uint8_t*)0xB8000000LU;
+uint8_t get_video_mode(void)
+{
+	union REGS regs = {0};
+	regs.h.ah = 0x0F;
+	int86(0x10, &regs, &regs);
+	return regs.h.al;
+}
+
+void set_cursor_pos(uint8_t col, uint8_t row)
+{
+	union REGS regs = {0};
+	regs.h.ah = 0x02;
+	regs.h.bh = get_active_page();
+	regs.h.dh = row;
+	regs.h.dl = col;
+	int86(0x10, &regs, &regs);
+}
+
+COORD get_cursor_pos(void)
+{
+	union REGS regs = {0};
+	COORD coord;
+	regs.h.ah = 0x03;
+	regs.h.bh = get_active_page();
+	int86(0x10, &regs, &regs);
+	coord.row = regs.h.dh;
+	coord.col = regs.h.dl;
+	return coord;
+}
+
+uint8_t get_cursor_x(void)
+{
+	union REGS regs = {0};
+	regs.h.ah = 0x03;
+	regs.h.bh = get_active_page();
+	int86(0x10, &regs, &regs);
+	return regs.h.dl;
+}
+
+uint8_t get_cursor_y(void)
+{
+	union REGS regs = {0};
+	regs.h.ah = 0x03;
+	regs.h.bh = get_active_page();
+	int86(0x10, &regs, &regs);
+	return regs.h.dh;
+}
+
+static void far * const VIDEO_MEMORY = (void far*)0xB8000000LU;
+
+/* return true on success */
+static void vram_cread(uint8_t *buffer, size_t size)
+{
+	COORD coord = get_cursor_pos();
+	uint8_t far *vidmem = (uint8_t far*)VIDEO_MEMORY + (coord.col + coord.row * GET_SCREEN_WIDTH());
+	size_t i = 0;
+	
+	assert(buffer);
+	
+	for(i = 0; i < size; i++)
+	{
+		buffer[i] = vidmem[i*2];
+	}
+}
+
+static bool vram_cwrite(uint8_t *buffer, size_t size)
+{
+	COORD coord = get_cursor_pos();
+	uint8_t far *vidmem = (uint8_t far*)VIDEO_MEMORY + (coord.col + coord.row * GET_SCREEN_WIDTH());
+	size_t i = 0;
+	
+	assert(buffer);
+	
+	for(i = 0; i < size; i++)
+	{
+		vidmem[i*2] = buffer[i];
+	}
+}
 
 void SetVideoMode(uint8_t VideoMode)
 {

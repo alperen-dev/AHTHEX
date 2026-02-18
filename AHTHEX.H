@@ -1,14 +1,6 @@
 #ifndef _AHTHEX_H_
 #define _AHTHEX_H_
 
-#ifdef __MSDOS__
-#include <dos.h>
-#include <alloc.h>
-#include <dir.h>
-#elif defined __WINDOWS__ || defined __WIN32__ || defined __WIN64__ || defined WIN32 || defined WIN64
-#include <windows.h>
-#endif
-
 #include <errno.h>
 #include <conio.h>
 #include <stdio.h>
@@ -20,8 +12,17 @@
 #include "AHTDEFS.H"
 #include "LNKLST.H"
 
-extern WORD MAXCOLUMN;
-extern WORD MAXROW;
+#if defined(OS_DOS)
+	#include <dos.h>
+#elif defined(OS_WIN)
+	#include <windows.h>
+#elif defined(OS_UNIX)
+	#include <termio.h>
+	#include <unistd.h>
+#endif
+
+extern uint16_t MAXCOLUMN;
+extern uint16_t MAXROW;
 
 #define DEBUG_MODE
 
@@ -41,7 +42,7 @@ extern WORD MAXROW;
 
 
 
-// KB
+/* KB */
 #ifdef __MSDOS__
 	#define KB_ESC 27
 	#define KB_CONTROL 0
@@ -65,7 +66,7 @@ extern WORD MAXROW;
 	#define KB_CTRL_O 15
 	#define KB_ALT_O 24
 	#define KB_BACKSPACE 8
-	#define KB_DEL 83 // control
+	#define KB_DEL 83 /* control */
 #elif defined __WINDOWS__ || defined __WIN32__ || defined __WIN64__ || defined WIN32 || defined WIN64
 	#define KB_ESC 27
 	#define KB_CONTROL 224

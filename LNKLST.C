@@ -1,12 +1,3 @@
-/*
-	Name: LNKLST.C
-	Copyright: MIT
-	Author: AHT
-	Date: 05.10.2025 06:17
-	Description: Circular double linked list (without dummy header)
-*/
-
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

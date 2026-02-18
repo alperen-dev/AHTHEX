@@ -3,15 +3,15 @@
 #define print_help_message() printf("AHTHEX <filename1> [filename2] ... [filename32]\n")
 
 Node *n = NULL; 
-HEXFILE *cf = NULL; // cf: current_file
+HEXFILE *cf = NULL; /* cf: current_file */
 size_t file_count = 0; 
 
-WORD MAXCOLUMN = 80, MAXROW = 25;
+uint16_t MAXCOLUMN = 80, MAXROW = 25;
 
-void put_hex_and_char_value(BYTE byte, long column, long row)
+void put_hex_and_char_value(uint8_t byte, long column, long row)
 {
 	unsigned char buff[4] = {'\0'};
-	sprintf(buff, "%02X", (WORD)byte);
+	sprintf(buff, "%02X", (uint16_t)byte);
 	PutStr(buff, 10 + column * 3, row + 2);
 	PutChar(iscntrl(byte) ? '.' : byte, 61 + column, row + 2);
 }

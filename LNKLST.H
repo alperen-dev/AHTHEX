@@ -1,11 +1,3 @@
-/*
-	Name: LNKLST.H
-	Copyright: MIT
-	Author: AHT
-	Date: 05.10.2025 06:33
-	Description: Circular double linked list with dummy head (dummy head contain metadata of list) header file.
-*/
-
 #ifndef _LINKEDLIST_H_
 #define _LINKEDLIST_H_
 

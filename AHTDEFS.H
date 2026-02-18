@@ -10,111 +10,79 @@
 #ifndef _AHTDEFS_H_
 #define _AHTDEFS_H_
 
-// define true-false value
-
-#ifndef TRUE
-#define TRUE 1
+/* Detect Processor architecture */
+#if defined(__x86_64__) || defined(_M_X64)
+	#define ARCH_X64
+	#define BITS_64
+#elif defined(__386__) || defined(__i386__) || defined(_M_IX86)
+	#define ARCH_X86
+	#define BITS_32
+#elif defined(__I86__) || defined(_M_I86)
+	#define ARCH_X86_16
+	#define BITS_16
+#elif defined(__aarch64__) || defined(_M_ARM64)
+	#define ARCH_ARM64
+	#define BITS_64
+#elif defined(__arm__) || defined(_M_ARM)
+	#define ARCH_ARM
+	#define BITS_32
+#else
+	#define ARCH_UNKNOWN
+	#warning Unknown CPU architecture
 #endif
+/* Detecting processor architecture ended */
 
-#ifndef FALSE
-#define FALSE 0
+/* Detect OS */
+#if defined(__MSDOS__) || defined(MSDOS) || defined(__DOS__)
+	#define OS_DOS
+	#if defined(BITS_16)
+		#define OS_DOS_16
+	#elif defined(BITS_32)
+		#define OS_DOS_32
+	#endif
+#elif defined(__WINDOWS__) || defined(_WINDOWS) || defined(__WIN32__) || defined(__WIN64__) || defined(WIN32) || defined(WIN64) || defined(__NT__) || defined(_WIN32)
+	#define OS_WIN
+	#if defined(__WIN64__) || defined (WIN64) || defined(_WIN64)
+		#define OS_WIN_64
+	#elif defined(__WIN32__) || defined(WIN32) || defined(_WIN32)
+		#define OS_WIN_32
+	#else
+		#define OS_WIN_16
+	#endif
+#elif defined(__unix__) || defined(__UNIX__) || defined(__LINUX__) || defined (__linux__) || defined(__APPLE__) || defined(__FreeBSD__)
+	#define OS_UNIX
+#else
+	#error Add your OS flag to one of the above
 #endif
-
-#ifndef true
-#define true 1
-#endif
-
-#ifndef false
-#define false 0
-#endif
-
-// define true-false end
+/* OS detection end */
 
 #define CONST const
 
-#ifdef __MSDOS__
-	#define FAR huge
+#ifdef OS_DOS_16
+	#define FAR far
 	#define NEAR near
 	#define HUGE huge
 #else
-	#define far
 	#define FAR
 	#define NEAR
 	#define HUGE
 #endif
 
-// define bool
-#ifndef __cplusplus
-	#if __STDC_VERSION__ >= 199901L
+/* define bool */
+#if !defined(__cplusplus) 
+	#if (defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L) || (defined(_MSC_VER) && _MSC_VER >= 1800)
 		#include <stdbool.h>
-	#elif !defined bool
-		typedef int bool;
-		#define true  1
+	#elif !defined(bool) && !defined(__bool_true_false_are_defined)
+		#define bool unsigned char
+		#define true 1
 		#define false 0
+		#define __bool_true_false_are_defined 1
 	#endif
 #endif
+/* defining bool ended */
 
-typedef unsigned char 		UCHAR;
-
-#ifdef __MSDOS__
-typedef char				CHAR;
-typedef int 				INT;
-typedef long 				LONG;
-typedef short				SHORT;
-typedef void 				VOID;
-typedef float				FLOAT;
-
-typedef const char 			CCHAR;
-
-typedef unsigned int		UINT;
-typedef unsigned long 		ULONG;
-typedef unsigned short		USHORT;
-
-typedef unsigned long 		DWORD;
-typedef unsigned int 		WORD;
-typedef unsigned char 		BYTE;
-
-typedef int 				BOOL;
-typedef int 				BOOLEAN;
-
-typedef unsigned char		COLORREF; // ???
-typedef long 				LRESULT;
-
-typedef void (FAR *FARPROC)(void);
-typedef void (NEAR *PROC)(void);
-
-typedef BOOL* 				PBOOL;
-typedef BOOLEAN* 			PBOOLEAN;
-typedef CCHAR*				PCCH, PCSTR;
-typedef CHAR* 				PCH, PCHAR, PSTR, PSZ;
-typedef FLOAT*				PFLOAT;
-typedef INT* 				PINT;
-typedef LONG* 				PLONG;
-typedef SHORT*				PSHORT;
-typedef VOID* 				PVOID;
-typedef DWORD*				PDWORD;
-typedef WORD* 				PWORD;
-typedef BYTE* 				PBYTE;
-typedef UCHAR*				PUCHAR;
-typedef UINT* 				PUINT;
-typedef ULONG*				PULONG;
-typedef USHORT* 			PUSHORT;
-
-typedef FAR BOOL* 			LPBOOL;
-typedef FAR CCHAR* 			LPCCH, LPCSTR;
-typedef FAR CHAR* 			LPCH;
-typedef FAR COLORREF* 		LPCOLORREF;
-typedef FAR DWORD* 			LPDWORD;
-typedef FAR INT* 			LPINT;
-typedef FAR LONG* 			LPLONG;
-typedef FAR CHAR* 			LPSTR;
-typedef FAR VOID* 			LPVOID;
-typedef FAR WORD* 			LPWORD;
-typedef FAR BYTE* 			LPBYTE;
-#endif // __MSDOS__
-
-// TUI
-#ifdef __MSDOS__
+/* TUI */
+#if defined(OS_DOS)
 	#define DOUBLY_TOP_LEFT 	((unsigned char)201)
 	#define DOUBLY_TOP_RIGHT 	((unsigned char)187)
 	#define DOUBLY_BOTTOM_LEFT 	((unsigned char)200)
@@ -141,7 +109,7 @@ typedef FAR BYTE* 			LPBYTE;
 	#define SINGLY_RIGHT_CROSS	((unsigned char)180)
 	#define SINGLY_CROSS		((unsigned char)197)
 	
-#elif defined __WINDOWS__ || defined __WIN32__ || defined __WIN64__ || defined WIN32 || defined WIN64
+#elif defined OS_WIN
 	#define DOUBLY_TOP_LEFT 	((unsigned char)201)
 	#define DOUBLY_TOP_RIGHT 	((unsigned char)187)
 	#define DOUBLY_BOTTOM_LEFT 	((unsigned char)200)

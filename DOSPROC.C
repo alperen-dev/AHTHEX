@@ -1,6 +1,79 @@
-#include "AHTHEX.H"
+#include "AHTDEFS.H"
+#include <stdio.h>
+#include <dos.h>
+#include <i86.h>
 
-static LPvoid VIDMEM = (uint8_t*)0xB8000000LU;
+
+
+/* ANSI.SYS or something similar function tool check */
+#define ANSI_DSR_MAX_ATTEMPT 30000
+
+typedef enum
+{
+	ANSI_SUPPORT_UNKNOWN,
+	ANSI_SUPPORT_YES,
+	ANSI_SUPPORT_NO
+}AnsiSupport;
+AnsiSupport ansiSupport = ANSI_SUPPORT_UNKNOWN;
+
+static bool check_ansi_interrupt(void)
+{
+	union REGS regs;
+	regs.x.ax = 0x1A00;
+	int86(0x2F, &regs, &regs);
+	if(regs.h.al == 0xFF)
+		return true;
+	return false;
+}
+
+/* DSR -> device status report */
+static bool check_ansi_dsr(void)
+{
+	uint32_t attempt = 0;
+	
+	printf("\x1B[6n"); /* DSR request */
+	
+	while(attempt < ANSI_DSR_MAX_ATTEMPT)
+	{
+		if(kbhit())
+		{
+			if(getch() == KB_ESC) /* answer format: ESC[r;c R */
+			{
+				while(kbhit())
+				{
+					getch();
+				}
+				return true;
+			}
+		}
+		attempt++;
+	}
+	printf("\b\b\b\b    \b\b\b\b"); /* clear consol buffer if ANSI driver is not found, its already clean if found */
+	return false;
+}
+
+bool is_ansi_supported(void)
+{
+	if(ansiSupport != ANSI_SUPPORT_UNKNOWN) /* already checked */
+		return ansiSupport;
+	
+	if(check_ansi_interrupt() == true)
+	{
+		ansiSupport = ANSI_SUPPORT_YES;
+		return true;
+	}
+	else if(check_ansi_dsr() == true) /* if not found on interrupt, check its behaviour */
+	{
+		ansiSupport = ANSI_SUPPORT_YES;
+		return true;
+	}
+	ansiSupport = ANSI_SUPPORT_NO;
+	return false; /* ANSI driver not found */
+}
+
+
+
+static char *VIDMEM = (uint8_t*)0xB8000000LU;
 
 void SetVideoMode(uint8_t VideoMode)
 {

@@ -1,6 +1,6 @@
-CC			:= x86_64-w64-mingw32-gcc
+CC			:= i686-w64-mingw32-gcc
 CFLAGS		:= -x c -std=c89 -mconsole -s
-USE_UPX		:= 0
+USE_UPX		:= 1
 TARGET		:= AHTHEXW.EXE
 
 SRCS		:= AHTHEX.C FILES.C WINPROC.C OPTIONS.C LNKLST.C
@@ -25,9 +25,6 @@ all: $(TARGET)
 $(TARGET): $(SRCS)
 	$(CC) $(CFLAGS) $(SRCS) -o $(TARGET)
 	@if [ "$(USE_UPX)" = "1" ]; then $(UPX) $(UPX_FLAGS) $(TARGET); fi
-
-run: $(TARGET)
-	wine AHTHEXW.EXE AHTHEXW.LOG &
 
 clean:
 	@$(RM) $(TARGET) *.obj $(NULL_DEVICE)

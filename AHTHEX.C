@@ -4,7 +4,7 @@
 
 Node *n = NULL; 
 HEXFILE *cf = NULL; /* cf: current_file */
-size_t file_count = 0; 
+size_t file_count = 0;
 
 uint16_t MAXCOLUMN = 80, MAXROW = 25;
 
@@ -75,7 +75,7 @@ bool print_to_console(uint8_t* buff, long number_of_char)
 	
 }
 
-bool change_hex_cursor_visibility(bool show) // show = 1: show cursor, show = 0: unshow cursor
+bool change_hex_cursor_visibility(bool show) /* show = 1: show cursor, show = 0: unshow cursor */
 {
 	if(cf->buff == NULL)
 	{
@@ -83,9 +83,9 @@ bool change_hex_cursor_visibility(bool show) // show = 1: show cursor, show = 0:
 		return false;
 	}
 	
-	ChangeCharAttrib( (show == 0 ? 0x07 : 0x70), 10 + cf->col * 3, cf->row + 2); // first digit of hexadecimal value
-	ChangeCharAttrib( (show == 0 ? 0x07 : 0x70), 11 + cf->col * 3, cf->row + 2); // second digit of hexadecimal value
-	ChangeCharAttrib( (show == 0 ? 0x07 : 0x70), 61 + cf->col, cf->row + 2); // ascii value
+	ChangeCharAttrib( (show == 0 ? 0x07 : 0x70), 10 + cf->col * 3, cf->row + 2); /* first digit of hexadecimal value */
+	ChangeCharAttrib( (show == 0 ? 0x07 : 0x70), 11 + cf->col * 3, cf->row + 2); /* second digit of hexadecimal value */
+	ChangeCharAttrib( (show == 0 ? 0x07 : 0x70), 61 + cf->col, cf->row + 2); /* ascii value */
 	return true;
 }
 
@@ -164,13 +164,13 @@ void control_keys(uint8_t secondaryByte)
 			n = GetPrevNode(n);
 			cf = (HEXFILE*)GetData(n);
 		break;
-		//case KB_ALT_S: // save as (TODO!!!)
-		//	save_as(cf);
-		//break;
+		/*case KB_ALT_S: /* save as (TODO!!!) */
+		/*	save_as(cf);
+		/*break;*/
 		case KB_ALT_O:
 			options();
 		break;
-		case KB_DEL: // delete byte
+		case KB_DEL: /* delete byte */
 			delete_byte();
 		break;
 	}
@@ -188,28 +188,28 @@ bool change_value(int type)
 	if(type == HEX)
 	{
 		uint8_t val = 0;
-		ChangeCharAttrib(0x87, 10 + cf->col * 3, cf->row + 2); // first digit of hexadecimal value, blink
-		ChangeCharAttrib(0x87, 11 + cf->col * 3, cf->row + 2); // second digit of hexadecimal value, blink
+		ChangeCharAttrib(0x87, 10 + cf->col * 3, cf->row + 2); /* first digit of hexadecimal value, blink */
+		ChangeCharAttrib(0x87, 11 + cf->col * 3, cf->row + 2); /* second digit of hexadecimal value, blink */
 		
 		printf("\rEnter new hex value: ");
 		scanf("%x", &val);
 		
 		cf->buff[ cf->index ] = val;
 		put_hex_and_char_value(val, cf->col, cf->row);
-		ChangeCharAttrib(0x70, 10 + cf->col * 3, cf->row + 2); // first digit of hexadecimal value, reverse
-		ChangeCharAttrib(0x70, 11 + cf->col * 3, cf->row + 2); // second digit of hexadecimal value, reverse
+		ChangeCharAttrib(0x70, 10 + cf->col * 3, cf->row + 2); /* first digit of hexadecimal value, reverse */
+		ChangeCharAttrib(0x70, 11 + cf->col * 3, cf->row + 2); /* second digit of hexadecimal value, reverse */
 	}
 	else if(type == ASCII)
 	{
 		uint8_t ch = 0;
-		ChangeCharAttrib(0x87, 61 + cf->col, cf->row + 2); // ascii value, blink
+		ChangeCharAttrib(0x87, 61 + cf->col, cf->row + 2); /* ascii value, blink */
 		
 		printf("\rEnter new char: ");
 		ch = getche();
 		
 		cf->buff[ cf->index ] = ch;
 		put_hex_and_char_value(ch, cf->col, cf->row);
-		ChangeCharAttrib(0x70, 61 + cf->col, cf->row + 2); // ascii value, reverse
+		ChangeCharAttrib(0x70, 61 + cf->col, cf->row + 2); /* ascii value, reverse */
 	}
 	SetConCursorPos(0, MAXROW-1);
 	return true;
@@ -225,7 +225,7 @@ uint8_t* add_byte()
 		return NULL;
 	}
 	
-	if( (temp = (uint8_t*)farrealloc((UCHAR far*)cf->buff, cf->size+1)) != NULL)
+	if( (temp = (uint8_t*)farrealloc((uint8_t FAR*)cf->buff, cf->size+1)) != NULL)
 	{
 		cf->buff = temp;
 		cf->buff[ cf->size ] = '\0';
@@ -259,7 +259,7 @@ uint8_t* delete_byte()
 		{
 			cf->buff[i] = cf->buff[i+1];
 		}
-		return cf->buff = farrealloc((UCHAR far*)cf->buff, --cf->size);
+		return cf->buff = farrealloc((uint8_t FAR*)cf->buff, --cf->size);
 	}
 	return cf->buff;
 }
@@ -278,7 +278,7 @@ bool find_value(int type)
 	SetConCursorPos(0, MAXROW-1);
 	ClearRow(MAXROW-1);
 	
-	if((value = malloc(1024*sizeof(char))) == NULL)
+	if((value = (unsigned char*)malloc(1024*sizeof(char))) == NULL)
 	{
 		Debug(errno, NULL);
 		return false;
@@ -322,7 +322,7 @@ bool find_value(int type)
 
 void help_screen(void)
 {
-	ClearScreen(); // konu olarak ayir
+	ClearScreen(); /* konu olarak ayir */
 	printf( "Keys:\n"
 			" H --> help screen\n" 
 			" Arrow keys, Page Up, Page Down --> move cursor\n"
@@ -366,8 +366,6 @@ int main(int argc, char **argv)
 	size_t i = 0;
 	uint8_t CurrentVideoMode = GetVideoMode();
 	
-	GetInput();
-	
 	get_options();
 	
 	
@@ -379,12 +377,12 @@ int main(int argc, char **argv)
 		return EINVAL;
 	}
 	
-	file_count = argc-1; // assume all of command line parameter is file name
+	file_count = argc-1; /* assume all of command line parameter is file name */
 	
-	// create circular doubly linked list for file header
+	/* create circular doubly linked list for file header */
 	for(i = 0; i < file_count; i++)
 	{
-		HEXFILE *hf = (HEXFILE*)calloc(1, sizeof(HEXFILE)); // actually we can use malloc but we want zero initialization
+		HEXFILE *hf = (HEXFILE*)calloc(1, sizeof(HEXFILE)); /* actually we can use malloc but we want zero initialization */
 		if(hf == NULL)
 		{
 			Debug(ENOMEM, "Not enought memory");
@@ -408,9 +406,7 @@ int main(int argc, char **argv)
 			return errno;
 		}
 	}
-	n = GetNextNode(n); // start at first parameter
-	
-	
+	n = GetNextNode(n); /* start at first parameter */
 	
 	if(file_count == 0)
 	{
@@ -431,16 +427,16 @@ int main(int argc, char **argv)
 			case KB_CONTROL:
 				control_keys(ch = getch());
 			break;
-			case 'A': // Add new byte
+			case 'A': /* Add new byte */
 				add_byte();
 			break;
-			case 'I': // Insert new byte
+			case 'I': /* Insert new byte */
 				insert_byte();
 			break;
-			case KB_BACKSPACE: // Delete byte
+			case KB_BACKSPACE: /* Delete byte */
 				delete_byte();
 			break;
-			case 'S': // write (save)
+			case 'S': /* write (save) */
 				write_file(cf);
 			break;
 			case KB_CTRL_S:
@@ -450,10 +446,10 @@ int main(int argc, char **argv)
 				{
 					write_file((HEXFILE*)n->data);
 					temp = GetNextNode(n);
-				}while(temp != n); // circular doubly linked list
+				}while(temp != n); /* circular doubly linked list */
 			}
 			break;
-			case 'G': // go to address
+			case 'G': /* go to address */
 			{
 				long index = 0;
 				SetConCursorPos(0, 0);
@@ -463,19 +459,19 @@ int main(int argc, char **argv)
 			}
 			break;
 			
-			case 'F': // find ascii
+			case 'F': /* find ascii */
 				find_value(ASCII);
 			break;
-			case KB_CTRL_F: // find hexadecimal
+			case KB_CTRL_F: /* find hexadecimal */
 				find_value(HEX);
 			break;
-			case KB_RETURN: // 13, for ascii edit
+			case KB_RETURN: /* 13, for ascii edit */
 				change_value(ASCII);
 			break;
-			case KB_CTRL_RETURN: // 10, for hexadecimal edit
+			case KB_CTRL_RETURN: /* 10, for hexadecimal edit */
 				change_value(HEX);
 			break;
-			case KB_CTRL_X: // close current file without save
+			case KB_CTRL_X: /* close current file without save */
 				ch = close_file(n);
 			break;
 			case KB_CTRL_N:

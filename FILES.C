@@ -181,7 +181,7 @@ bool open_file(Node *n)
 		{
 			errno = ENOMEM;
 			Debug(errno, NULL);
-			return false; // Not enought memory. */
+			return false; /* Not enought memory. */
 		}
 		
 		/* get file name from user */

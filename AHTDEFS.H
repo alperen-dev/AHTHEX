@@ -25,6 +25,8 @@
 #endif
 /* Detecting processor architecture ended */
 
+
+
 /* Detect OS and pointer size */
 #if defined(__MSDOS__) || defined(MSDOS) || defined(__DOS__)
 	#define OS_DOS
@@ -70,6 +72,7 @@
 /* OS and pointer size detection end */
 
 
+
 #if defined(OS_DOS_16) || defined(OS_WIN_16)
 	#define FAR far
 	#define NEAR near
@@ -79,6 +82,7 @@
 	#define NEAR
 	#define HUGE
 #endif
+
 
 /* define bool */
 #if !defined(__cplusplus) 
@@ -246,5 +250,57 @@
 #define UTF_SINGLY_LEFT_CROSS	"\xE2\x94\x9C" /* ├ */
 #define UTF_SINGLY_RIGHT_CROSS	"\xE2\x94\xA4" /* ┤ */
 #define UTF_SINGLY_CROSS		"\xE2\x94\xBC" /* ┼ */
+
+
+/* Keyboard map */
+#if defined(OS_DOS)
+	#define KB_ESC 27
+	#define KB_CONTROL 0
+	#define KB_UP 72
+	#define KB_DOWN 80
+	#define KB_LEFT 75
+	#define KB_RIGHT 77
+	#define KB_RETURN 13
+	#define KB_CTRL_RETURN 10
+	#define KB_PG_UP 73
+	#define KB_PG_DOWN 81
+	#define KB_HOME 71
+	#define KB_END 79
+	#define KB_CTRL_F 6
+	#define KB_CTRL_RIGHT 116
+	#define KB_CTRL_LEFT 115
+	#define KB_CTRL_S 19
+	#define KB_ALT_S 31
+	#define KB_CTRL_X 24
+	#define KB_CTRL_N 14
+	#define KB_CTRL_O 15
+	#define KB_ALT_O 24
+	#define KB_BACKSPACE 8
+	#define KB_DEL 83 /* control */
+#elif defined(OS_WIN)
+	#define KB_ESC 27
+	#define KB_CONTROL 224
+	#define KB_UP 72
+	#define KB_DOWN 80
+	#define KB_LEFT 75
+	#define KB_RIGHT 77
+	#define KB_RETURN 13
+	#define KB_CTRL_RETURN 10
+	#define KB_PG_UP 73
+	#define KB_PG_DOWN 81
+	#define KB_HOME 71
+	#define KB_END 79
+	#define KB_CTRL_F 6
+	#define KB_CTRL_RIGHT 116
+	#define KB_CTRL_LEFT 115
+	#define KB_CTRL_S 19
+	#define KB_ALT_S 115
+	#define KB_CTRL_X 24
+	#define KB_CTRL_N 14
+	#define KB_CTRL_O 15
+	#define KB_ALT_O 111
+	#define KB_BACKSPACE 8
+	#define KB_DEL 83 /* control */
+#endif
 
 #endif /* __AHTDEFS_H__ */

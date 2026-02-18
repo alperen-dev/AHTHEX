@@ -41,58 +41,6 @@ extern uint16_t MAXROW;
 #define ASCII 3
 
 
-
-/* KB */
-#if defined(OS_DOS)
-	#define KB_ESC 27
-	#define KB_CONTROL 0
-	#define KB_UP 72
-	#define KB_DOWN 80
-	#define KB_LEFT 75
-	#define KB_RIGHT 77
-	#define KB_RETURN 13
-	#define KB_CTRL_RETURN 10
-	#define KB_PG_UP 73
-	#define KB_PG_DOWN 81
-	#define KB_HOME 71
-	#define KB_END 79
-	#define KB_CTRL_F 6
-	#define KB_CTRL_RIGHT 116
-	#define KB_CTRL_LEFT 115
-	#define KB_CTRL_S 19
-	#define KB_ALT_S 31
-	#define KB_CTRL_X 24
-	#define KB_CTRL_N 14
-	#define KB_CTRL_O 15
-	#define KB_ALT_O 24
-	#define KB_BACKSPACE 8
-	#define KB_DEL 83 /* control */
-#elif defined(OS_WIN)
-	#define KB_ESC 27
-	#define KB_CONTROL 224
-	#define KB_UP 72
-	#define KB_DOWN 80
-	#define KB_LEFT 75
-	#define KB_RIGHT 77
-	#define KB_RETURN 13
-	#define KB_CTRL_RETURN 10
-	#define KB_PG_UP 73
-	#define KB_PG_DOWN 81
-	#define KB_HOME 71
-	#define KB_END 79
-	#define KB_CTRL_F 6
-	#define KB_CTRL_RIGHT 116
-	#define KB_CTRL_LEFT 115
-	#define KB_CTRL_S 19
-	#define KB_ALT_S 115
-	#define KB_CTRL_X 24
-	#define KB_CTRL_N 14
-	#define KB_CTRL_O 15
-	#define KB_ALT_O 111
-	#define KB_BACKSPACE 8
-	#define KB_DEL 83 /* control */
-#endif
-
 #if defined(OS_WIN)
 
 	#define MAXPATH MAX_PATH
@@ -123,6 +71,7 @@ typedef struct _INPUTKEY
 	uint8_t bAltState;
 }INPUTKEY;
 
+bool is_ansi_supported(void);
 void SetVideoMode(uint8_t VideoMode);
 uint8_t GetVideoMode(void);
 void PutChar(uint8_t ch, uint32_t x, uint32_t y);
@@ -136,7 +85,7 @@ void ClearRow(int Row);
 bool SetScreenResolution(uint16_t Row);
 
 long _farstrlen(uint8_t * str);
-uint8_t * _farmemsearch(uint8_t * s1, uint8_t * s2, long s1_length, long s2_length);
+uint8_t *_farmemsearch(uint8_t * s1, uint8_t * s2, long s1_length, long s2_length);
 
 uint8_t hexchar_to_byte(uint8_t byte[2]); /* example:  "F2" -> 0xF2 */
 

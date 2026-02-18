@@ -1,11 +1,25 @@
 #include "AHTHEX.H"
 
-void SetVideoMode(uint8_t VideoMode) // Do NOTHING
+bool is_ansi_supported(void)
+{
+	DWORD dwMode;
+	HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+	if(hOut == INVALID_HANDLE_VALUE || hOut == NULL)
+		return false;
+	if(GetConsoleMode(hOut, &dwMode) == 0) /* return zero on fails */
+		return false;
+	dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+	if(SetConsoleMode(hOut, dwMode)) /* console support ansi escape codes and also activated if it is not already active. */
+		return true;
+	return false;
+}
+
+void SetVideoMode(uint8_t VideoMode) /* Do NOTHING */
 {
 	UNREFERENCED_PARAMETER(VideoMode);
 }
 
-uint8_t GetVideoMode(void) // Do NOTHING
+uint8_t GetVideoMode(void) /* Do NOTHING */
 {
 	CONSOLE_SCREEN_BUFFER_INFO csbi;
 
@@ -97,20 +111,20 @@ void ClearScreen(void)
         return;
     }
 
-    // Calculate total cells in buffer
+    /* Calculate total cells in buffer */
     consoleSize = csbi.dwSize.X * csbi.dwSize.Y;
 
-    // Fill console with spaces
+    /* Fill console with spaces */
     FillConsoleOutputCharacter(hConsole, ' ', consoleSize, home, &cellsWritten);
 
-    // Reset attributes too (optional)
+    /* Reset attributes too (optional) */
     FillConsoleOutputAttribute(hConsole, csbi.wAttributes, consoleSize, home, &cellsWritten);
 
-    // Move cursor back to top-left
+    /* Move cursor back to top-left */
     SetConsoleCursorPosition(hConsole, home);
 }
 
-void ClearRow(int Row) // Only in text mode
+void ClearRow(int Row) /* Only in text mode */
 {
 	CONSOLE_SCREEN_BUFFER_INFO info;
 	GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &info);
@@ -151,7 +165,7 @@ uint8_t * _farmemsearch(uint8_t * s1, uint8_t * s2, long s1_length, long s2_leng
 	{
 		for(j = 0; j < s2_length; j++)
 		{
-			if(s1[i+j] != s2[j]) // Not same
+			if(s1[i+j] != s2[j]) /* Not same */
 			{
 				flag = 0;
 				break;
@@ -181,10 +195,10 @@ void TUI_Rectangle(uint8_t * lpTitle, int x, int y, int w, int h, bool bIsDoubly
 	int i = 0;
 	if(bIsDoubly)
 	{
-		PutStr(ANSI_DOUBLY_TOP_LEFT, x, y); // upper left corner
-		PutStr(ANSI_DOUBLY_TOP_RIGHT, x+w, y); // upper right corner
-		PutStr(ANSI_DOUBLY_BOTTOM_LEFT, x, y+h); // lower left corner
-		PutStr(ANSI_DOUBLY_BOTTOM_RIGHT, x+w, y+h); // lower right corner
+		PutStr(ANSI_DOUBLY_TOP_LEFT, x, y); /* upper left corner */
+		PutStr(ANSI_DOUBLY_TOP_RIGHT, x+w, y); /* upper right corner */
+		PutStr(ANSI_DOUBLY_BOTTOM_LEFT, x, y+h); /* lower left corner */
+		PutStr(ANSI_DOUBLY_BOTTOM_RIGHT, x+w, y+h); /* lower right corner */
 		for(i = 0; i < w-1; i++)
 		{
 			PutStr(ANSI_DOUBLY_HORIZONTAL, x+i+1, y);
@@ -198,10 +212,10 @@ void TUI_Rectangle(uint8_t * lpTitle, int x, int y, int w, int h, bool bIsDoubly
 	}
 	else if(bIsDoubly == false)
 	{
-		PutStr(ANSI_SINGLY_TOP_LEFT, x, y); // upper left corner
-		PutStr(ANSI_SINGLY_TOP_RIGHT, x+w, y); // upper right corner
-		PutStr(ANSI_SINGLY_BOTTOM_LEFT, x, y+h); // lower left corner
-		PutStr(ANSI_SINGLY_BOTTOM_RIGHT, x+w, y+h); // lower right corner
+		PutStr(ANSI_SINGLY_TOP_LEFT, x, y); /* upper left corner */
+		PutStr(ANSI_SINGLY_TOP_RIGHT, x+w, y); /* upper right corner */
+		PutStr(ANSI_SINGLY_BOTTOM_LEFT, x, y+h); /* lower left corner */
+		PutStr(ANSI_SINGLY_BOTTOM_RIGHT, x+w, y+h); /* lower right corner */
 		for(i = 0; i < w-1; i++)
 		{
 			PutStr(ANSI_SINGLY_HORIZONTAL, x+i+1, y);
@@ -266,9 +280,9 @@ int TUI_CreateMenu(uint8_t * *lpTexts, uint8_t * lpTitle, int ActiveMenu, long S
 	return CurrentMenu;
 }
 
-bool CheckShiftState() // both left and right Shift accepted
+bool CheckShiftState() /* both left and right Shift accepted */
 {
-	return !!(GetAsyncKeyState(VK_SHIFT) & 0x8000); // !! for convert to bool (its actually bad idea)
+	return !!(GetAsyncKeyState(VK_SHIFT) & 0x8000); /* !! for convert to bool (its actually bad idea) */
 }
 
 bool CheckCtrlState()
@@ -292,7 +306,7 @@ INPUTKEY *GetInput(void)
 		Debug(GetLastError(), "ik or hInput is NULL");
 		return NULL;
 	}
-	if(ReadConsoleInput(hInput, &ir, (DWORD)1, &dwInputRead) == 0) // when error return 0 value
+	if(ReadConsoleInput(hInput, &ir, (DWORD)1, &dwInputRead) == 0) /* when error return 0 value */
 	{
 		Debug(GetLastError(), "ReadConsoleInput");
 		return NULL;
@@ -301,7 +315,7 @@ INPUTKEY *GetInput(void)
 	{
 		ik->bAsciiCode = ir.Event.KeyEvent.wVirtualKeyCode;
 		ik->bScanCode = ir.Event.KeyEvent.wVirtualScanCode;
-		//ik->bShiftState = ir.Event.
+		/*ik->bShiftState = ir.Event.*/
 		return ik;
 	}
 	
@@ -333,7 +347,7 @@ bool DebugClose(void)
 	#endif
 }
 
-bool DebugPrint(int Errno, uint8_t * lpFileName, int Line, uint8_t * lpMessage)
+bool DebugPrint(int Errno, char *lpFileName, int Line, char *lpMessage)
 {
 	#ifdef DEBUG_MODE
 	time_t ti = time(NULL);
@@ -345,7 +359,7 @@ bool DebugPrint(int Errno, uint8_t * lpFileName, int Line, uint8_t * lpMessage)
 		t->tm_mday, t->tm_mon, t->tm_year+1900, t->tm_hour, t->tm_min, t->tm_sec, Errno, lpFileName, Line, (lpMessage == NULL ? strerror(Errno) : lpMessage));
 	DebugClose();
 	#else
-	// unreferance parameters
+	/* unreferance parameters */
 	UNREFERENCED_PARAMETER(Errno);
 	UNREFERENCED_PARAMETER(lpFileName);
 	UNREFERENCED_PARAMETER(Line);

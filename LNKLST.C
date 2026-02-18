@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "lnklst.h"
+#include "LNKLST.H"
 
-// Create first node
+/* Create first node */
 Node *CreateList(void *data)
 {
 	Node *node = (Node*)malloc(sizeof(Node));
@@ -17,7 +17,7 @@ Node *CreateList(void *data)
 	return NULL;
 }
 
-// add new node after given node and set data as given data if node is null create list
+/* add new node after given node and set data as given data if node is null create list */
 Node *AddNext(Node *node, void *data)
 {
 	if(node != NULL)
@@ -33,14 +33,14 @@ Node *AddNext(Node *node, void *data)
 			return newNode;
 		}
 	}
-	else // if node is null create list
+	else /* if node is null create list */
 	{
 		return CreateList(data);
 	}
 	return NULL;
 }
 
-// add new node before given node and set data as given data if node is null create list
+/* add new node before given node and set data as given data if node is null create list */
 Node *AddPrev(Node *node, void *data)
 {
 	if(node != NULL)
@@ -56,28 +56,28 @@ Node *AddPrev(Node *node, void *data)
 			return newNode;
 		}
 	}
-	else // if node is null create list
+	else /* if node is null create list */
 	{
 		return CreateList(data);
 	}
 	return NULL;
 }
 
-// delete given node
+/* delete given node */
 bool DeleteNode(Node *node)
 {
 	if(node != NULL)
 	{
 		node->prev->next = node->next;
 		node->next->prev = node->prev;
-		// freeing data is not our responsibility.
+		/* freeing data is not our responsibility. */
 		free(node);
 		return true;
 	}
 	return false;
 }
 
-// delete whole list
+/* delete whole list */
 bool DeleteList(Node *node)
 {
 	if(node != NULL)
@@ -94,7 +94,7 @@ bool DeleteList(Node *node)
 	return false;
 }
 
-// get next node of given node
+/* get next node of given node */
 Node *GetNextNode(Node *node)
 {
 	if(node != NULL)
@@ -104,7 +104,7 @@ Node *GetNextNode(Node *node)
 	return NULL;
 }
 
-// get previous node of given node
+/* get previous node of given node */
 Node *GetPrevNode(Node *node)
 {
 	if(node != NULL)
@@ -114,7 +114,7 @@ Node *GetPrevNode(Node *node)
 	return NULL;
 }
 
-// set data of given node
+/* set data of given node */
 bool SetData(Node *node, void *data)
 {
 	if(node != NULL)
@@ -125,7 +125,7 @@ bool SetData(Node *node, void *data)
 	return false;
 }
 
-// get data of given node
+/* get data of given node */
 void *GetData(Node *node)
 {
 	if(node != NULL)
@@ -135,7 +135,7 @@ void *GetData(Node *node)
 	return NULL;
 }
 
-// get node from given index forward
+/* get node from given index forward */
 Node *GetNextIndexOf(Node *node, size_t index)
 {
 	size_t i = 0;
@@ -147,7 +147,7 @@ Node *GetNextIndexOf(Node *node, size_t index)
 	return temp;
 }
 
-// get node from given index backward
+/* get node from given index backward */
 Node *GetPrevIndexOf(Node *node, size_t index)
 {
 	size_t i = 0;
@@ -159,7 +159,7 @@ Node *GetPrevIndexOf(Node *node, size_t index)
 	return temp;
 }
 
-// get size of node
+/* get size of node */
 size_t GetSize(Node *node)
 {
 	if(node != NULL)

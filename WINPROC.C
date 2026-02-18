@@ -1,21 +1,21 @@
 #include "AHTHEX.H"
 
-VOID SetVideoMode(BYTE VideoMode) // Do NOTHING
+void SetVideoMode(uint8_t VideoMode) // Do NOTHING
 {
 	UNREFERENCED_PARAMETER(VideoMode);
 }
 
-BYTE GetVideoMode(VOID) // Do NOTHING
+uint8_t GetVideoMode(void) // Do NOTHING
 {
 	CONSOLE_SCREEN_BUFFER_INFO csbi;
 
     GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
     MAXCOLUMN = csbi.srWindow.Right - csbi.srWindow.Left + 1;
     MAXROW = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
-	return (BYTE)0;
+	return (uint8_t)0;
 }
 
-VOID PutChar(BYTE ch, DWORD x, DWORD y)
+void PutChar(uint8_t ch, uint32_t x, uint32_t y)
 {
 	CONSOLE_SCREEN_BUFFER_INFO info;
 	GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &info);
@@ -31,7 +31,7 @@ VOID PutChar(BYTE ch, DWORD x, DWORD y)
 	WriteConsoleOutput(GetStdHandle(STD_OUTPUT_HANDLE), &chi, info.dwSize, cor, &smr);
 }
 
-VOID ChangeCharAttrib(BYTE Attrib, DWORD x, DWORD y)
+void ChangeCharAttrib(uint8_t Attrib, uint32_t x, uint32_t y)
 {
 	CONSOLE_SCREEN_BUFFER_INFO info;
 	GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &info);
@@ -47,9 +47,9 @@ VOID ChangeCharAttrib(BYTE Attrib, DWORD x, DWORD y)
 	WriteConsoleOutput(GetStdHandle(STD_OUTPUT_HANDLE), &ch, info.dwSize, cor, &smr);
 }
 
-VOID PutStr(LPSTR lpszStr, DWORD x, DWORD y)
+void PutStr(uint8_t * lpszStr, uint32_t x, uint32_t y)
 {
-	DWORD i = 0;
+	uint32_t i = 0;
 	while(*lpszStr != '\0')
 	{
 		PutChar(*lpszStr++, x+i, y);
@@ -57,9 +57,9 @@ VOID PutStr(LPSTR lpszStr, DWORD x, DWORD y)
 	}
 }
 
-VOID PutStrAttrib(LPSTR lpszStr, DWORD x, DWORD y, BYTE Attribute)
+void PutStrAttrib(uint8_t * lpszStr, uint32_t x, uint32_t y, uint8_t Attribute)
 {
-	DWORD i = 0;
+	uint32_t i = 0;
 	while(*lpszStr != '\0')
 	{
 		PutChar(*lpszStr++, x+i, y);
@@ -68,13 +68,13 @@ VOID PutStrAttrib(LPSTR lpszStr, DWORD x, DWORD y, BYTE Attribute)
 	}
 }
 
-VOID SetConCursorPos(BYTE x, BYTE y)
+void SetConCursorPos(uint8_t x, uint8_t y)
 {
 	COORD pos = {x, y};
 	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), pos);
 }
 
-VOID GetConCursorPos(BYTE *x, BYTE *y)
+void GetConCursorPos(uint8_t *x, uint8_t *y)
 {
 	CONSOLE_SCREEN_BUFFER_INFO info;
 	GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &info);
@@ -84,8 +84,8 @@ VOID GetConCursorPos(BYTE *x, BYTE *y)
 		*y = info.dwCursorPosition.Y;
 }
 
-// gpt4 generated function
-VOID ClearScreen(VOID)
+/* gpt4 generated function */
+void ClearScreen(void)
 {
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
     CONSOLE_SCREEN_BUFFER_INFO csbi;
@@ -110,7 +110,7 @@ VOID ClearScreen(VOID)
     SetConsoleCursorPosition(hConsole, home);
 }
 
-VOID ClearRow(INT Row) // Only in text mode
+void ClearRow(int Row) // Only in text mode
 {
 	CONSOLE_SCREEN_BUFFER_INFO info;
 	GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &info);
@@ -126,7 +126,7 @@ VOID ClearRow(INT Row) // Only in text mode
 	WriteConsoleOutput(GetStdHandle(STD_OUTPUT_HANDLE), &ch, info.dwSize, cor, &smr);
 }
 
-BOOL SetScreenResolution(WORD Row)
+bool SetScreenResolution(uint16_t Row)
 {
 	
 }
@@ -136,17 +136,17 @@ BOOL SetScreenResolution(WORD Row)
 
 
 
-LONG _farstrlen(LPSTR str)
+long _farstrlen(uint8_t * str)
 {
-	LPSTR temp = str;
+	uint8_t * temp = str;
 	while(*str != '\0')
 		str++;
-	return (LONG)(str-temp);
+	return (long)(str-temp);
 }
 
-LPSTR _farmemsearch(LPSTR s1, LPSTR s2, LONG s1_length, LONG s2_length)
+uint8_t * _farmemsearch(uint8_t * s1, uint8_t * s2, long s1_length, long s2_length)
 {
-	LONG i = 0, j = 0, flag = 1;
+	long i = 0, j = 0, flag = 1;
 	for(i = 0; i < s1_length - s2_length + 1; i++, flag = 1)
 	{
 		for(j = 0; j < s2_length; j++)
@@ -163,7 +163,7 @@ LPSTR _farmemsearch(LPSTR s1, LPSTR s2, LONG s1_length, LONG s2_length)
 	return NULL;
 }
 
-BYTE hexchar_to_byte(BYTE byte[2])
+uint8_t hexchar_to_byte(uint8_t byte[2])
 {
 	int i = 0;
 	for(i = 0; i < 2; i++)
@@ -176,50 +176,50 @@ BYTE hexchar_to_byte(BYTE byte[2])
 	return byte[0] * 16 + byte[1];
 }
 
-VOID TUI_Rectangle(LPSTR lpTitle, INT x, INT y, INT w, INT h, BOOL bIsDoubly)
+void TUI_Rectangle(uint8_t * lpTitle, int x, int y, int w, int h, bool bIsDoubly)
 {
-	INT i = 0;
+	int i = 0;
 	if(bIsDoubly)
 	{
-		PutChar(DOUBLY_TOP_LEFT, x, y); // upper left corner
-		PutChar(DOUBLY_TOP_RIGHT, x+w, y); // upper right corner
-		PutChar(DOUBLY_BOTTOM_LEFT, x, y+h); // lower left corner
-		PutChar(DOUBLY_BOTTOM_RIGHT, x+w, y+h); // lower right corner
+		PutStr(ANSI_DOUBLY_TOP_LEFT, x, y); // upper left corner
+		PutStr(ANSI_DOUBLY_TOP_RIGHT, x+w, y); // upper right corner
+		PutStr(ANSI_DOUBLY_BOTTOM_LEFT, x, y+h); // lower left corner
+		PutStr(ANSI_DOUBLY_BOTTOM_RIGHT, x+w, y+h); // lower right corner
 		for(i = 0; i < w-1; i++)
 		{
-			PutChar(DOUBLY_HORIZONTAL, x+i+1, y);
-			PutChar(DOUBLY_HORIZONTAL, x+i+1, y+h);
+			PutStr(ANSI_DOUBLY_HORIZONTAL, x+i+1, y);
+			PutStr(ANSI_DOUBLY_HORIZONTAL, x+i+1, y+h);
 		}
 		for(i = 0; i < h-1; i++)
 		{
-			PutChar(DOUBLY_VERTICAL, x, y+i+1);
-			PutChar(DOUBLY_VERTICAL, x+w, y+i+1);
+			PutStr(ANSI_DOUBLY_VERTICAL, x, y+i+1);
+			PutStr(ANSI_DOUBLY_VERTICAL, x+w, y+i+1);
 		}
 	}
-	else if(bIsDoubly == FALSE)
+	else if(bIsDoubly == false)
 	{
-		PutChar(SINGLY_TOP_LEFT, x, y); // upper left corner
-		PutChar(SINGLY_TOP_RIGHT, x+w, y); // upper right corner
-		PutChar(SINGLY_BOTTOM_LEFT, x, y+h); // lower left corner
-		PutChar(SINGLY_BOTTOM_RIGHT, x+w, y+h); // lower right corner
+		PutStr(ANSI_SINGLY_TOP_LEFT, x, y); // upper left corner
+		PutStr(ANSI_SINGLY_TOP_RIGHT, x+w, y); // upper right corner
+		PutStr(ANSI_SINGLY_BOTTOM_LEFT, x, y+h); // lower left corner
+		PutStr(ANSI_SINGLY_BOTTOM_RIGHT, x+w, y+h); // lower right corner
 		for(i = 0; i < w-1; i++)
 		{
-			PutChar(SINGLY_HORIZONTAL, x+i+1, y);
-			PutChar(SINGLY_HORIZONTAL, x+i+1, y+h);
+			PutStr(ANSI_SINGLY_HORIZONTAL, x+i+1, y);
+			PutStr(ANSI_SINGLY_HORIZONTAL, x+i+1, y+h);
 		}
 		for(i = 0; i < h-1; i++)
 		{
-			PutChar(SINGLY_VERTICAL, x, y+i+1);
-			PutChar(SINGLY_VERTICAL, x+w, y+i+1);
+			PutStr(ANSI_SINGLY_VERTICAL, x, y+i+1);
+			PutStr(ANSI_SINGLY_VERTICAL, x+w, y+i+1);
 		}
 	}
 	PutStr(lpTitle, x+1+(w - _farstrlen(lpTitle)) / 2, y);
 }
 
-INT TUI_CreateMenu(LPSTR *lpTexts, LPSTR lpTitle, INT ActiveMenu, LONG StartX, LONG StartY, BOOL bIsDoubly)
+int TUI_CreateMenu(uint8_t * *lpTexts, uint8_t * lpTitle, int ActiveMenu, long StartX, long StartY, bool bIsDoubly)
 {
 	CHAR ch;
-	INT i = 0, CurrentMenu = ActiveMenu, MenuCount = 0, LongestText = 0;
+	int i = 0, CurrentMenu = ActiveMenu, MenuCount = 0, LongestText = 0;
 	for(i = 0; lpTexts[i] != NULL; i++)
 	{
 		LongestText = MAX(_farstrlen(lpTexts[i]), LongestText);
@@ -281,7 +281,7 @@ bool CheckAltState()
 	return !!(GetAsyncKeyState(VK_MENU) & 0x8000);
 }
 
-INPUTKEY *GetInput(VOID)
+INPUTKEY *GetInput(void)
 {
 	INPUT_RECORD ir;
 	INPUTKEY *ik = (INPUTKEY*)malloc(sizeof(INPUTKEY));
@@ -311,36 +311,36 @@ INPUTKEY *GetInput(VOID)
 static FILE *log_file = NULL;
 #endif
 
-BOOL DebugInit(VOID)
+bool DebugInit(void)
 {
 	#ifdef DEBUG_MODE
 	if( (log_file = fopen("AHTHEXW.LOG", "a") ) == NULL)
 	{
-		return FALSE;
+		return false;
 	}
 	#endif
-	return TRUE;
+	return true;
 }
 
-BOOL DebugClose(VOID)
+bool DebugClose(void)
 {
 	#ifdef DEBUG_MODE
 	if(log_file == NULL)
-		return FALSE;
+		return false;
 	return !fclose(log_file);
 	#else
-	return TRUE;
+	return true;
 	#endif
 }
 
-BOOL DebugPrint(INT Errno, LPSTR lpFileName, INT Line, LPSTR lpMessage)
+bool DebugPrint(int Errno, uint8_t * lpFileName, int Line, uint8_t * lpMessage)
 {
 	#ifdef DEBUG_MODE
 	time_t ti = time(NULL);
 	struct tm *t = localtime(&ti);
 	DebugInit();
 	if(log_file == NULL)
-		return FALSE;
+		return false;
 	fprintf(log_file, "Date: %02d.%02d.%04d, Time: %02d.%02d.%02d, Errno: %d, File Name: %s, Line: %d\nError: %s\n",
 		t->tm_mday, t->tm_mon, t->tm_year+1900, t->tm_hour, t->tm_min, t->tm_sec, Errno, lpFileName, Line, (lpMessage == NULL ? strerror(Errno) : lpMessage));
 	DebugClose();
@@ -351,22 +351,22 @@ BOOL DebugPrint(INT Errno, LPSTR lpFileName, INT Line, LPSTR lpMessage)
 	UNREFERENCED_PARAMETER(Line);
 	UNREFERENCED_PARAMETER(lpMessage);
 	#endif
-	return TRUE;
+	return true;
 }
 
-BOOL debug(CHAR *pStr, ...)
+bool debug(CHAR *pStr, ...)
 {
 	#ifdef DEBUG_MODE
 	va_list ap;
 	DebugInit();
 	if(log_file == NULL)
-		return FALSE;
+		return false;
 	va_start(ap, pStr);
 	vfprintf(log_file, pStr, ap);
 	DebugClose();
-	return TRUE;
+	return true;
 	#else
 	UNREFERENCED_PARAMETER(pStr);
-	return TRUE;
+	return true;
 	#endif
 }

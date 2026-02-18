@@ -1,0 +1,30 @@
+CC			:= x86_64-w64-mingw32-gcc
+CFLAGS		:= -x c -std=c89 -mconsole -s
+USE_UPX		:= 1
+TARGET		:= AHTHEXW.EXE
+
+SRCS		:= AHTHEX.C FILES.C WINPROC.C OPTIONS.C LNKLST.C
+
+# --- OS DETECTION ---
+ifeq ($(OS),Windows_NT)
+	RM = del /f /q
+	NULL_DEVICE = 2>nul
+else
+	RM = rm -f
+	NULL_DEVICE = 2>/dev/null
+endif
+
+# Check if UPX is requested
+ifeq ($(USE_UPX), 1)
+    UPX := upx.exe		# /path/to/upx or C:\\Path\\to\\upx.exe
+    UPX_FLAGS := -9
+endif
+
+# Default rule
+all: $(TARGET)
+$(TARGET): $(SRCS)
+	$(CC) $(CFLAGS) $(SRCS) -o $(TARGET)
+	@if [ "$(USE_UPX)" = "1" ]; then $(UPX) $(UPX_FLAGS) $(TARGET); fi
+
+clean:
+	@$(RM) $(TARGET) *.obj $(NULL_DEVICE)

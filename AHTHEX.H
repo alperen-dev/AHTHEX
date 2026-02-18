@@ -1,6 +1,8 @@
-#ifndef _AHTHEX_H_
-#define _AHTHEX_H_
+#ifndef __AHTHEX_H__
+#define __AHTHEX_H__
 
+#include "AHTDEFS.H"
+#include "LNKLST.H"
 #include <errno.h>
 #include <conio.h>
 #include <stdio.h>
@@ -9,8 +11,6 @@
 #include <ctype.h>
 #include <time.h>
 #include <io.h>
-#include "AHTDEFS.H"
-#include "LNKLST.H"
 
 #if defined(OS_DOS)
 	#include <dos.h>
@@ -31,7 +31,7 @@ extern uint16_t MAXROW;
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 
-#define DEFAULT_ALIGN -1 // used in TUI_CreateMenu() function
+#define DEFAULT_ALIGN -1 /* used in TUI_CreateMenu() function */
 
 #define MAX_NUMBER_OF_FILE 32
 
@@ -43,7 +43,7 @@ extern uint16_t MAXROW;
 
 
 /* KB */
-#ifdef __MSDOS__
+#if defined(OS_DOS)
 	#define KB_ESC 27
 	#define KB_CONTROL 0
 	#define KB_UP 72
@@ -67,7 +67,7 @@ extern uint16_t MAXROW;
 	#define KB_ALT_O 24
 	#define KB_BACKSPACE 8
 	#define KB_DEL 83 /* control */
-#elif defined __WINDOWS__ || defined __WIN32__ || defined __WIN64__ || defined WIN32 || defined WIN64
+#elif defined(OS_WIN)
 	#define KB_ESC 27
 	#define KB_CONTROL 224
 	#define KB_UP 72
@@ -90,10 +90,10 @@ extern uint16_t MAXROW;
 	#define KB_CTRL_O 15
 	#define KB_ALT_O 111
 	#define KB_BACKSPACE 8
-	#define KB_DEL 83 // control
+	#define KB_DEL 83 /* control */
 #endif
 
-#if defined __WINDOWS__ || defined __WIN32__ || defined __WIN64__ || defined WIN32 || defined WIN64
+#if defined(OS_WIN)
 
 	#define MAXPATH MAX_PATH
 	
@@ -107,76 +107,76 @@ typedef struct tagHEXFILE
 {
 	long col, row, index;
 	long size;
-	LPBYTE buff;
+	uint8_t *buff;
 	char *filename;
 }HEXFILE;
 
-// gfx_card_installition_check
+/* gfx_card_installition_check */
 
-// DOSPROC.C / WINPROC.C
+/* DOSPROC.C / WINPROC.C */
 typedef struct _INPUTKEY
 {
-	WORD bAsciiCode;
-	WORD bScanCode;
-	BYTE bShiftState;
-	BYTE bCtrlState;
-	BYTE bAltState;
+	uint16_t bAsciiCode;
+	uint16_t bScanCode;
+	uint8_t bShiftState;
+	uint8_t bCtrlState;
+	uint8_t bAltState;
 }INPUTKEY;
 
-VOID SetVideoMode(BYTE VideoMode);
-BYTE GetVideoMode(VOID);
-VOID PutChar(BYTE ch, DWORD x, DWORD y);
-VOID ChangeCharAttrib(BYTE Attrib, DWORD x, DWORD y);
-VOID PutStr(LPSTR lpszStr, DWORD x, DWORD y);
-VOID SetConCursorPos(BYTE x, BYTE y);
-VOID GetConCursorPos(BYTE *x, BYTE *y);
-VOID ClearScreen(VOID);
-VOID ClearRow(INT Row);
+void SetVideoMode(uint8_t VideoMode);
+uint8_t GetVideoMode(void);
+void PutChar(uint8_t ch, uint32_t x, uint32_t y);
+void ChangeCharAttrib(uint8_t Attrib, uint32_t x, uint32_t y);
+void PutStr(uint8_t * lpszStr, uint32_t x, uint32_t y);
+void SetConCursorPos(uint8_t x, uint8_t y);
+void GetConCursorPos(uint8_t *x, uint8_t *y);
+void ClearScreen(void);
+void ClearRow(int Row);
 
-BOOL SetScreenResolution(WORD Row);
+bool SetScreenResolution(uint16_t Row);
 
-LONG _farstrlen(LPSTR str);
-LPSTR _farmemsearch(LPSTR s1, LPSTR s2, LONG s1_length, LONG s2_length);
+long _farstrlen(uint8_t * str);
+uint8_t * _farmemsearch(uint8_t * s1, uint8_t * s2, long s1_length, long s2_length);
 
-BYTE hexchar_to_byte(BYTE byte[2]); // example:  "F2" -> 0xF2
+uint8_t hexchar_to_byte(uint8_t byte[2]); /* example:  "F2" -> 0xF2 */
 
-VOID TUI_Rectangle(LPSTR lpTitle, INT x, INT y, INT w, INT h, BOOL bIsDoubly);
-INT TUI_CreateMenu(LPSTR *lpTexts, LPSTR lpTitle, INT ActiveMenu, LONG StartX, LONG StartY, BOOL bIsDoubly);
+void TUI_Rectangle(uint8_t * lpTitle, int x, int y, int w, int h, bool bIsDoubly);
+int TUI_CreateMenu(uint8_t * *lpTexts, uint8_t * lpTitle, int ActiveMenu, long StartX, long StartY, bool bIsDoubly);
 
 bool CheckShiftState();
 bool CheckCtrlState();
 bool CheckAltState();
-INPUTKEY *GetInput(VOID);
+INPUTKEY *GetInput(void);
 
 #define Debug(errno, message) DebugPrint(errno, __FILE__, __LINE__, message)
 
-BOOL DebugInit(VOID);
-BOOL DebugClose(VOID);
-BOOL DebugPrint(INT Errno, LPSTR lpFileName, INT Line, LPSTR lpMessage);
-BOOL debug(CHAR *pStr, ...);
+bool DebugInit(void);
+bool DebugClose(void);
+bool DebugPrint(int Errno, char *lpFileName, int Line, char *lpMessage);
+bool debug(char *pStr, ...);
 
 
-// FILES.C
-long get_file_size(FILE *f); // error: -1
-LPBYTE read_file(HEXFILE *h);
-BOOL write_file(HEXFILE *h);
-BOOL save_as(HEXFILE *h);
+/* FILES.C */
+long get_file_size(FILE *f); /* error: -1 */
+uint8_t* read_file(HEXFILE *h);
+bool write_file(HEXFILE *h);
+bool save_as(HEXFILE *h);
 char close_file(Node *n);
-BOOL open_file(Node *n);
-BOOL create_new_file(Node *n);
+bool open_file(Node *n);
+bool create_new_file(Node *n);
 
 
-//OPTIONS.C
-extern WORD opt_offset_base;
-extern WORD opt_row_number;
-BOOL get_options(VOID);
-BOOL set_options(VOID);
-BOOL options(VOID);
+/* OPTIONS.C */
+extern uint16_t opt_offset_base;
+extern uint16_t opt_row_number;
+bool get_options(void);
+bool set_options(void);
+bool options(void);
 
 extern Node *n;
 extern HEXFILE *cf;
-extern size_t file_count; // cf: current_file
+extern size_t file_count; /* cf: current_file */
 
-LPBYTE delete_byte();
+uint8_t* delete_byte();
 
-#endif /* _AHTHEX_H_ */
+#endif /* __AHTHEX_H__ */

@@ -1,76 +1,76 @@
 #include "AHTHEX.H"
 
-WORD opt_offset_base = HEX; // HEX, DEC, OCT
-WORD opt_row_number = 25; // 25, 43, 50
+uint16_t opt_offset_base = HEX; /* HEX, DEC, OCT */
+uint16_t opt_row_number = 25; /* 25, 43, 50 */
 
-static VOID set_offset_base(VOID)
+static void set_offset_base(void)
 {
-	WORD temp = 0;
-	LPSTR lpTexts[] = {"Hexadecimal", "Decimal", "Octal", "Back", NULL};
+	uint16_t temp = 0;
+	uint8_t * lpTexts[] = {"Hexadecimal", "Decimal", "Octal", "Back", NULL};
 	ClearScreen();
 	SetConCursorPos(0, 25);
-	temp = TUI_CreateMenu(lpTexts, "Set Offset Base", opt_offset_base, DEFAULT_ALIGN, DEFAULT_ALIGN, TRUE);
-	if(temp < 3) // Not "Back" button
+	temp = TUI_CreateMenu(lpTexts, "Set Offset Base", opt_offset_base, DEFAULT_ALIGN, DEFAULT_ALIGN, true);
+	if(temp < 3) /* Not "Back" button */
 		opt_offset_base = temp;
 }
 
-static VOID set_screen_resolution(VOID)
+static void set_screen_resolution(void)
 {
-	WORD temp = 0;
-	LPSTR lpTexts[] = {"80x25", "80x43 (EGA, VGA)", "80x50 (VGA)", "Back", NULL};
+	uint16_t temp = 0;
+	uint8_t * lpTexts[] = {"80x25", "80x43 (EGA, VGA)", "80x50 (VGA)", "Back", NULL};
 	ClearScreen();
 	SetConCursorPos(0, 25);
 	temp = TUI_CreateMenu(lpTexts, "Set Screen Resolution", 
 		opt_row_number == 25 ? 0 : (opt_row_number == 43 ? 1 : (opt_row_number == 50 ? 2 : 3)),
-		DEFAULT_ALIGN, DEFAULT_ALIGN, TRUE);
-	if(temp < 3) // Not "Back" button
+		DEFAULT_ALIGN, DEFAULT_ALIGN, true);
+	if(temp < 3) /* Not "Back" button */
 	{
 		opt_row_number = temp == 0 ? 25 : (temp == 1 ? 43 : (temp == 2 ? 50: opt_row_number));
 		SetScreenResolution(opt_row_number);
 	}
 }
 
-BOOL get_options(VOID)
+bool get_options(void)
 {
 	FILE *f = fopen(OPTIONS_FILE_NAME, "r");
 	if(f == NULL)
 	{
 		Debug(errno, NULL);
-		return FALSE;
+		return false;
 	}
 	fscanf(f, "%d%d", &opt_offset_base, &opt_row_number);
 	SetScreenResolution(opt_row_number);
-	return TRUE;
+	return true;
 }
 
-BOOL set_options(VOID)
+bool set_options(void)
 {
 	FILE *f = fopen(OPTIONS_FILE_NAME, "w");
 	if(f == NULL)
 	{
 		Debug(errno, NULL);
-		return FALSE;
+		return false;
 	}
 	fprintf(f, "%d %d", opt_offset_base, opt_row_number);
-	return TRUE;
+	return true;
 }
 
-VOID (*options_proc[2])(VOID) = {set_offset_base, set_screen_resolution};
+void (*options_proc[2])(void) = {set_offset_base, set_screen_resolution};
 
-BOOL options(VOID)
+bool options(void)
 {
-	INT temp = 0, ButtonCount = 2;
-	LPSTR lpTexts[] = {"Set offset base", "Set screen resolution", "Back", NULL};
+	int temp = 0, ButtonCount = 2;
+	uint8_t * lpTexts[] = {"Set offset base", "Set screen resolution", "Back", NULL};
 	do
 	{
 		ClearScreen();
 		SetConCursorPos(0, 25);
-		TUI_Rectangle("OPTIONS", 0, 0, MAXCOLUMN, MAXROW, TRUE);
-		temp = TUI_CreateMenu(lpTexts, "Options", 0, DEFAULT_ALIGN, DEFAULT_ALIGN, TRUE);
-		if(temp < ButtonCount) // Not "Back" button
+		TUI_Rectangle("OPTIONS", 0, 0, MAXCOLUMN, MAXROW, true);
+		temp = TUI_CreateMenu(lpTexts, "Options", 0, DEFAULT_ALIGN, DEFAULT_ALIGN, true);
+		if(temp < ButtonCount) /* Not "Back" button */
 			options_proc[temp]();
-	}while(temp != ButtonCount); // Not "Back" button
+	}while(temp != ButtonCount); /* Not "Back" button */
 	set_options();
+	return true;
 	ClearScreen();
-	return TRUE;
 }

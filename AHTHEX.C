@@ -16,17 +16,17 @@ void put_hex_and_char_value(uint8_t byte, long column, long row)
 	PutChar(iscntrl(byte) ? '.' : byte, 61 + column, row + 2);
 }
 
-bool print_to_console(LPBYTE buff, long number_of_char)
+bool print_to_console(uint8_t* buff, long number_of_char)
 {
 	if(cf != NULL)
 	{
 		long i = 0;
-		long first_row = MAX(cf->index - (cf->row * 16 + cf->col), 0L); // ilk satiri 0'dan buyuk satir numaralari icin
+		long first_row = MAX(cf->index - (cf->row * 16 + cf->col), 0L); /* ilk satiri 0'dan buyuk satir numaralari icin */
 		
 		if(buff == NULL)
 		{
 			Debug(EINVAL, "buff = NULL");
-			return FALSE;
+			return false;
 		}
 		ClearScreen();
 		switch(opt_offset_base)
@@ -69,41 +69,41 @@ bool print_to_console(LPBYTE buff, long number_of_char)
 				printf("Press H for help.               File %o    index: %lo, row: %lo, column: %lo", 0, cf->index, cf->row, cf->col);
 			break;
 		}
-		return TRUE;
+		return true;
 	}
-	return FALSE;
+	return false;
 	
 }
 
-BOOL change_hex_cursor_visibility(BOOL show) // show = 1: show cursor, show = 0: unshow cursor
+bool change_hex_cursor_visibility(bool show) // show = 1: show cursor, show = 0: unshow cursor
 {
 	if(cf->buff == NULL)
 	{
 		Debug(EINVAL, "hf->buff = NULL");
-		return FALSE;
+		return false;
 	}
 	
 	ChangeCharAttrib( (show == 0 ? 0x07 : 0x70), 10 + cf->col * 3, cf->row + 2); // first digit of hexadecimal value
 	ChangeCharAttrib( (show == 0 ? 0x07 : 0x70), 11 + cf->col * 3, cf->row + 2); // second digit of hexadecimal value
 	ChangeCharAttrib( (show == 0 ? 0x07 : 0x70), 61 + cf->col, cf->row + 2); // ascii value
-	return TRUE;
+	return true;
 }
 
 #define unshow_cursor() change_hex_cursor_visibility(0)
 #define show_cursor() change_hex_cursor_visibility(1)
 
 
-BOOL goto_cursor(long index, long row)
+bool goto_cursor(long index, long row)
 {
 	if(cf->buff == NULL)
 	{
 		Debug(EINVAL, "cf->buff = NULL");
-		return FALSE;
+		return false;
 	}
 	else if(cf->size < 0)
 	{
 		Debug(EINVAL, "file_size < 0");
-		return FALSE;
+		return false;
 	}
 	
 	if(index < 0)
@@ -124,10 +124,10 @@ BOOL goto_cursor(long index, long row)
 	cf->row = row;
 	cf->col = cf->index % 16L;
 		
-	return TRUE;
+	return true;
 }
 
-void control_keys(BYTE secondaryByte)
+void control_keys(uint8_t secondaryByte)
 {
 	switch(secondaryByte)
 	{
@@ -176,18 +176,18 @@ void control_keys(BYTE secondaryByte)
 	}
 }
 
-BOOL change_value(int type)
+bool change_value(int type)
 {
 	if(cf->buff == NULL)
 	{
 		Debug(EINVAL, "cf->buff = NULL");
-		return FALSE;
+		return false;
 	}
 	SetConCursorPos(0, 0);
 	printf("\t\t\t\t\t\t\t\t");
 	if(type == HEX)
 	{
-		BYTE val = 0;
+		uint8_t val = 0;
 		ChangeCharAttrib(0x87, 10 + cf->col * 3, cf->row + 2); // first digit of hexadecimal value, blink
 		ChangeCharAttrib(0x87, 11 + cf->col * 3, cf->row + 2); // second digit of hexadecimal value, blink
 		
@@ -201,7 +201,7 @@ BOOL change_value(int type)
 	}
 	else if(type == ASCII)
 	{
-		BYTE ch = 0;
+		uint8_t ch = 0;
 		ChangeCharAttrib(0x87, 61 + cf->col, cf->row + 2); // ascii value, blink
 		
 		printf("\rEnter new char: ");
@@ -212,12 +212,12 @@ BOOL change_value(int type)
 		ChangeCharAttrib(0x70, 61 + cf->col, cf->row + 2); // ascii value, reverse
 	}
 	SetConCursorPos(0, MAXROW-1);
-	return TRUE;
+	return true;
 }
 
-LPBYTE add_byte()
+uint8_t* add_byte()
 {
-	LPBYTE temp = NULL;
+	uint8_t* temp = NULL;
 	
 	if(cf->buff == NULL)
 	{
@@ -225,7 +225,7 @@ LPBYTE add_byte()
 		return NULL;
 	}
 	
-	if( (temp = (LPBYTE)farrealloc((UCHAR far*)cf->buff, cf->size+1)) != NULL)
+	if( (temp = (uint8_t*)farrealloc((UCHAR far*)cf->buff, cf->size+1)) != NULL)
 	{
 		cf->buff = temp;
 		cf->buff[ cf->size ] = '\0';
@@ -238,7 +238,7 @@ LPBYTE add_byte()
 	return cf->buff;
 }
 
-LPBYTE insert_byte()
+uint8_t* insert_byte()
 {
 	register long i = 0;
 	add_byte();
@@ -250,7 +250,7 @@ LPBYTE insert_byte()
 	return cf->buff;
 }
 
-LPBYTE delete_byte()
+uint8_t* delete_byte()
 {
 	register long i = 0;
 	if(cf->size > 1)
@@ -264,7 +264,7 @@ LPBYTE delete_byte()
 	return cf->buff;
 }
 
-BOOL find_value(int type)
+bool find_value(int type)
 {
 	unsigned char *value = NULL, FAR *ptr = NULL;
 	int value_length = 0;
@@ -272,7 +272,7 @@ BOOL find_value(int type)
 	if(cf->buff == NULL)
 	{
 		Debug(EINVAL, "cf->buff = NULL");
-		return FALSE;
+		return false;
 	}
 	
 	SetConCursorPos(0, MAXROW-1);
@@ -281,7 +281,7 @@ BOOL find_value(int type)
 	if((value = malloc(1024*sizeof(char))) == NULL)
 	{
 		Debug(errno, NULL);
-		return FALSE;
+		return false;
 	}
 	
 	if(type == HEX)
@@ -303,7 +303,7 @@ BOOL find_value(int type)
 		fgets(value, 16, stdin);
 		value[value_length = strlen(value)-1] = '\0';
 	}
-	if((ptr = _farmemsearch(&(cf->buff[cf->index+1]) , (LPSTR)value, cf->size - cf->index - 1, value_length)) == NULL)
+	if((ptr = _farmemsearch(&(cf->buff[cf->index+1]) , (uint8_t *)value, cf->size - cf->index - 1, value_length)) == NULL)
 	{
 		SetConCursorPos(0, MAXROW-1);
 		ClearRow(MAXROW-1);
@@ -317,7 +317,7 @@ BOOL find_value(int type)
 	
 	free(value);
 	SetConCursorPos(0, MAXROW-1);
-	return TRUE;
+	return true;
 }
 
 void help_screen(void)
@@ -364,7 +364,7 @@ int main(int argc, char **argv)
 {
 	unsigned char ch = 0;
 	size_t i = 0;
-	BYTE CurrentVideoMode = GetVideoMode();
+	uint8_t CurrentVideoMode = GetVideoMode();
 	
 	GetInput();
 	

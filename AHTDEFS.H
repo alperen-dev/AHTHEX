@@ -133,18 +133,18 @@
 	
 	#if defined(_MSC_VER) && (_MSC_VER >= 1200) /* VS 6.0 (1998) */
 		typedef __int64					int64_t;
-		#define INT64_MIN		(-9223372036854775807i64-1)
-		#define INT64_MAX		(9223372036854775807i64)
+		#define INT64_MIN				(-9223372036854775807i64-1)
+		#define INT64_MAX				(9223372036854775807i64)
 		
 		typedef unsigned __int64		uint64_t;
 		#define HAS_INT64
 	#elif (defined(__WATCOMC__) && __WATCOMC__ >= 1100) || (defined(__GNUC__) && __GNUC__ >= 2)
 		typedef signed long long		int64_t;
-		#define INT64_MIN		(-9223372036854775807LL-1)
-		#define INT64_MAX		(9223372036854775807LL)
+		#define INT64_MIN				(-9223372036854775807LL-1)
+		#define INT64_MAX				(9223372036854775807LL)
 		
 		typedef unsigned long long		uint64_t;
-		#define UINT64_MAX		(18446744073709551615ULL)
+		#define UINT64_MAX				(18446744073709551615ULL)
 		#define HAS_INT64
 	#endif
 	

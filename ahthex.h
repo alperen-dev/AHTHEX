@@ -1,8 +1,6 @@
 #ifndef __AHTHEX_H__
 #define __AHTHEX_H__
 
-#include "AHTDEFS.H"
-#include "LNKLST.H"
 #include <errno.h>
 #include <conio.h>
 #include <stdio.h>
@@ -11,6 +9,8 @@
 #include <ctype.h>
 #include <time.h>
 #include <io.h>
+#include "ahthex.h"
+#include "lnklst.h"
 
 #if defined(OS_DOS)
 	#include <dos.h>
@@ -104,7 +104,7 @@ bool DebugClose(void);
 bool DebugPrint(int Errno, char *lpFileName, int Line, char *lpMessage);
 bool debug(char *pStr, ...);
 
-
+#if 0
 /* FILES.C */
 long get_file_size(FILE *f); /* error: -1 */
 uint8_t* read_file(HEXFILE *h);
@@ -127,5 +127,7 @@ extern HEXFILE *cf;
 extern size_t file_count; /* cf: current_file */
 
 uint8_t* delete_byte();
+
+#endif
 
 #endif /* __AHTHEX_H__ */

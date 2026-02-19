@@ -1,4 +1,11 @@
-#include "AHTHEX.H"
+#include "ahthex.h"
+
+int main()
+{
+	return 0;
+}
+
+#if 0
 
 #define print_help_message() printf("AHTHEX <filename1> [filename2] ... [filename32]\n")
 
@@ -164,9 +171,9 @@ void control_keys(uint8_t secondaryByte)
 			n = GetPrevNode(n);
 			cf = (HEXFILE*)GetData(n);
 		break;
-		/*case KB_ALT_S: /* save as (TODO!!!) */
-		/*	save_as(cf);
-		/*break;*/
+		/*case KB_ALT_S: save as (TODO!!!)
+			save_as(cf);
+		break;*/
 		case KB_ALT_O:
 			options();
 		break;
@@ -225,7 +232,7 @@ uint8_t* add_byte()
 		return NULL;
 	}
 	
-	if( (temp = (uint8_t*)farrealloc((uint8_t FAR*)cf->buff, cf->size+1)) != NULL)
+	if( (temp = (uint8_t*)realloc((uint8_t)cf->buff, cf->size+1)) != NULL)
 	{
 		cf->buff = temp;
 		cf->buff[ cf->size ] = '\0';
@@ -259,7 +266,7 @@ uint8_t* delete_byte()
 		{
 			cf->buff[i] = cf->buff[i+1];
 		}
-		return cf->buff = farrealloc((uint8_t FAR*)cf->buff, --cf->size);
+		return cf->buff = realloc((uint8_t *)cf->buff, --cf->size);
 	}
 	return cf->buff;
 }
@@ -485,3 +492,5 @@ int main(int argc, char **argv)
 	SetVideoMode(CurrentVideoMode);
 	return 0;
 }
+
+#endif

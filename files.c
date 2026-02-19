@@ -1,6 +1,10 @@
 /* TODO: make this file portable. */
 
-#include "AHTHEX.H"
+#include "ahthex.h"
+
+int a2;
+
+#if 0
 
 static char temp_filename[MAXPATH];
 
@@ -249,3 +253,5 @@ bool create_new_file(Node *n)
 	
 	return false;
 }
+
+#endif

@@ -1,4 +1,4 @@
-#include "AHTHEX.H"
+#include "ahthex.h"
 
 bool is_ansi_supported(void)
 {

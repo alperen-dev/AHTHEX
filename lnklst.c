@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "LNKLST.H"
+#include "lnklst.h"
 
 /* Create first node */
 Node *CreateList(void *data)

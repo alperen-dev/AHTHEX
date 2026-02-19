@@ -1,4 +1,8 @@
-#include "AHTHEX.H"
+#include "ahthex.h"
+
+int a1;
+
+#if 0
 
 uint16_t opt_offset_base = HEX; /* HEX, DEC, OCT */
 uint16_t opt_row_number = 25; /* 25, 43, 50 */
@@ -74,3 +78,5 @@ bool options(void)
 	return true;
 	ClearScreen();
 }
+
+#endif

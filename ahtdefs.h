@@ -2,6 +2,7 @@
 #define __AHTDEFS_H__
 
 #include <limits.h>
+#include <stddef.h>
 
 /* Detect Processor architecture */
 #if defined(__x86_64__) || defined(_M_X64)
@@ -101,97 +102,103 @@
 #if (defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L) || (defined(_MSC_VER) && _MSC_VER >= 1600) /* VS 2010 */
 	#include <stdint.h>
 #else
-	typedef signed char					int8_t;
-	#define INT8_MAX					(127)
-	#define INT8_MIN					(-128)
-	
-	typedef unsigned char				uint8_t;
-	#define UINT8_MAX					(255)
-	
-	typedef signed short				int16_t;
-	#define INT16_MAX					(32767)
-	#define INT16_MIN					(-32767-1)
-	
-	typedef unsigned short				uint16_t;
-	#if defined(BITS_16)
-		#define UINT16_MAX				(65535U)
-	#elif defined(BITS_32) || defined(BITS_64)
-		#define UINT16_MAX				(65535)
-	#endif
-	
-	#if defined(BITS_16)
-		typedef signed long				int32_t;
-		#define INT32_MAX				(2147483647L)
-		#define INT32_MIN				(-2147483647L-1)
+	#if !defined(_EXACT_WIDTH_INTS)
+		typedef signed char					int8_t;
+		#define INT8_MAX					(127)
+		#define INT8_MIN					(-128)
 		
-		typedef unsigned long			uint32_t;
-		#define UINT32_MAX				(4294967295UL)
-	#elif defined(BITS_32) || defined(BITS_64)
-		typedef signed int				int32_t;
-		#define INT32_MAX				(2147483647)
-		#define INT32_MIN				(-2147483647-1)
+		typedef unsigned char				uint8_t;
+		#define UINT8_MAX					(255)
 		
-		typedef unsigned int			uint32_t;
-		#define UINT32_MAX				(4294967295U)
-	#endif
-	
-	#if defined(_MSC_VER) && (_MSC_VER >= 1200) /* VS 6.0 (1998) */
-		typedef __int64					int64_t;
-		#define INT64_MIN				(-9223372036854775807i64-1)
-		#define INT64_MAX				(9223372036854775807i64)
+		typedef signed short				int16_t;
+		#define INT16_MAX					(32767)
+		#define INT16_MIN					(-32767-1)
 		
-		typedef unsigned __int64		uint64_t;
-		#define HAS_INT64
-	#elif (defined(__WATCOMC__) && __WATCOMC__ >= 1100) || (defined(__GNUC__) && __GNUC__ >= 2)
-		typedef signed long long		int64_t;
-		#define INT64_MIN				(-9223372036854775807LL-1)
-		#define INT64_MAX				(9223372036854775807LL)
+		typedef unsigned short				uint16_t;
+		#if defined(BITS_16)
+			#define UINT16_MAX				(65535U)
+		#elif defined(BITS_32) || defined(BITS_64)
+			#define UINT16_MAX				(65535)
+		#endif
 		
-		typedef unsigned long long		uint64_t;
-		#define UINT64_MAX				(18446744073709551615ULL)
-		#define HAS_INT64
-	#endif
-	
-	/* set intmax_t as int64_t if platform support 64 bit integer */
-	#if defined(HAS_INT64)
+		#if defined(BITS_16)
+			typedef signed long				int32_t;
+			#define INT32_MAX				(2147483647L)
+			#define INT32_MIN				(-2147483647L-1)
+			
+			typedef unsigned long			uint32_t;
+			#define UINT32_MAX				(4294967295UL)
+		#elif defined(BITS_32) || defined(BITS_64)
+			typedef signed int				int32_t;
+			#define INT32_MAX				(2147483647)
+			#define INT32_MIN				(-2147483647-1)
+			
+			typedef unsigned int			uint32_t;
+			#define UINT32_MAX				(4294967295U)
+		#endif
 		
-		typedef int64_t			intmax_t;
-		#define INTMAX_MAX		INT64_MAX
-		#define INTMAX_MIN		INT64_MIN
+		#if defined(_MSC_VER) && (_MSC_VER >= 1200) /* VS 6.0 (1998) */
+			typedef __int64					int64_t;
+			#define INT64_MIN				(-9223372036854775807i64-1)
+			#define INT64_MAX				(9223372036854775807i64)
+			
+			typedef unsigned __int64		uint64_t;
+			#define HAS_INT64
+		#elif (defined(__WATCOMC__) && __WATCOMC__ >= 1100) || (defined(__GNUC__) && __GNUC__ >= 2)
+			typedef signed long long		int64_t;
+			#define INT64_MIN				(-9223372036854775807LL-1)
+			#define INT64_MAX				(9223372036854775807LL)
+			
+			typedef unsigned long long		uint64_t;
+			#define UINT64_MAX				(18446744073709551615ULL)
+			#define HAS_INT64
+		#endif
 		
-		typedef uint64_t		uintmax_t;
-		#define UINTMAX_MAX		UINT64_MAX
-	#else
-		typedef int32_t			intmax_t;
-		#define INTMAX_MAX		INT32_MAX
-		#define INTMAX_MIN		INT32_MIN
+		/* set intmax_t as int64_t if platform support 64 bit integer */
+		#if defined(HAS_INT64)
+			
+			typedef int64_t			intmax_t;
+			#define INTMAX_MAX		INT64_MAX
+			#define INTMAX_MIN		INT64_MIN
+			
+			typedef uint64_t		uintmax_t;
+			#define UINTMAX_MAX		UINT64_MAX
+		#else
+			typedef int32_t			intmax_t;
+			#define INTMAX_MAX		INT32_MAX
+			#define INTMAX_MIN		INT32_MIN
+			
+			typedef uint32_t		uintmax_t;
+			#define UINTMAX_MAX		UINT32_MAX
+		#endif
 		
-		typedef uint32_t		uintmax_t;
-		#define UINTMAX_MAX		UINT32_MAX
-	#endif
-	
-	#if (PTR_SIZE == 8)
-		typedef int64_t			intptr_t;
-		#define INTPTR_MAX		INT64_MAX
-		#define INTPTR_MIN		INT64_MIN
-		
-		typedef uint64_t		uintptr_t;
-		#define UINTPTR_MAX		UINT64_MAX
-	#elif (PTR_SIZE == 4)
-		typedef int32_t			intptr_t;
-		#define INTPTR_MAX		INT32_MAX
-		#define INTPTR_MIN		INT32_MIN
-		
-		typedef uint32_t		uintptr_t;
-		#define UINTPTR_MAX		UINT32_MAX
-	#elif (PTR_SIZE == 2)
-		typedef int16_t			intptr_t;
-		#define INTPTR_MAX		INT16_MAX
-		#define INTPTR_MIN		INT16_MIN
-		
-		typedef uint16_t		uintptr_t;
-		#define UINTPTR_MAX		UINT16_MAX
-	#endif
+		#if !defined(_INTPTR_T_DEFINED)
+			#if (PTR_SIZE == 8)
+				typedef int64_t			intptr_t;
+				#define INTPTR_MAX		INT64_MAX
+				#define INTPTR_MIN		INT64_MIN
+				
+				typedef uint64_t		uintptr_t;
+				#define UINTPTR_MAX		UINT64_MAX
+			#elif (PTR_SIZE == 4)
+				typedef int32_t			intptr_t;
+				#define INTPTR_MAX		INT32_MAX
+				#define INTPTR_MIN		INT32_MIN
+				
+				typedef uint32_t		uintptr_t;
+				#define UINTPTR_MAX		UINT32_MAX
+			#elif (PTR_SIZE == 2)
+				typedef int16_t			intptr_t;
+				#define INTPTR_MAX		INT16_MAX
+				#define INTPTR_MIN		INT16_MIN
+				
+				typedef uint16_t		uintptr_t;
+				#define UINTPTR_MAX		UINT16_MAX
+			#endif
+			#define _INTPTR_T_DEFINED /* to avoid watcom library definition conflict */
+		#endif /* _INTPTR_T_DEFINED */
+		#define _EXACT_WIDTH_INTS /* to avoid watcom library definition conflict */
+	#endif /* _EXACT_WIDTH_INTS */
 	
 #endif
 

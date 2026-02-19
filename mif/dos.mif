@@ -1,0 +1,14 @@
+NAME	=	AHTHEXD
+EXT		=	COM
+SYSTEM	=	com
+CC		=	owcc
+WATCOM	=	$(%WATCOM)
+
+!ifndef SRCS
+!	warning SRCS is not defined!
+!endif
+
+SRCS += dosproc.c
+
+CFLAGS	=	-Wall -Wextra -b $(SYSTEM) -march=i86 -mabi=cdecl -fpack-struct=2 -mregparm=0 -mcmodel=mt -I="$(WATCOM)/h"
+LDFLAGS	=	$(CFLAGS) -Wl,"option quiet" -Wl,"disable 1019"

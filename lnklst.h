@@ -1,7 +1,7 @@
 #ifndef _LINKEDLIST_H_
 #define _LINKEDLIST_H_
 
-#include "AHTDEFS.H"
+#include "ahtdefs.h"
 
 /* doubly linked list */
 typedef struct Node

@@ -49,12 +49,14 @@
 *.i*86
 *.x86_64
 *.hex
+*.COM
 
 # Debug files
 *.dSYM/
 *.su
 *.idb
 *.pdb
+*.sym
 
 # Kernel Module Compile Results
 *.mod*

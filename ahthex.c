@@ -2,6 +2,14 @@
 
 int main()
 {
+	if(is_ansi_supported() == true)
+	{
+		printf("ANSI escape sequence supported\n");
+	}
+	else
+	{
+		printf("ANSI escape sequence not supported\n");
+	}
 	return 0;
 }
 

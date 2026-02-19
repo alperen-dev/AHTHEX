@@ -1,4 +1,4 @@
-SRCS = ahthex.c files.c lnklst.c options.c
+SRCS = ahthex.c files.c lnklst.c options.c log.c
 
 # valid TARGET_SYS's are: dos, win16, win32
 !ifndef TARGET_SYS

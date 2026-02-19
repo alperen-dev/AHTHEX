@@ -65,6 +65,7 @@ static bool check_ansi_vram(void)
 	vram_cread(orjBuffer, 3);
 	
 	printf("\x1B[s");
+	fflush(stdout);
 	
 	/* if cursor moved, that mean ANSI.SYS or similar tool is not installed */
 	if(get_cursor_x() > 0)
@@ -88,15 +89,20 @@ bool is_ansi_supported(void)
 	
 	if(check_ansi_interrupt() == true)
 	{
+		printf("[+] ANSI support detected using interrupt\n");
 		ansiSupport = ANSI_SUPPORT_YES;
 		return true;
 	}
 	else if(check_ansi_vram() == true) /* if not found on interrupt, check its behaviour */
 	{
+		printf("[+] ANSI support detected using vram\n");
 		ansiSupport = ANSI_SUPPORT_YES;
 		return true;
 	}
-	ansiSupport = ANSI_SUPPORT_NO;
+	else
+	{
+		ansiSupport = ANSI_SUPPORT_NO;
+	}
 	return false; /* ANSI driver not found */
 }
 
@@ -601,64 +607,4 @@ bool CheckAltState()
 	return GetKbFlags() & 0x08;
 }
 
-#ifdef DEBUG_MODE
-static FILE *log_file = NULL;
-#endif
-
-bool DebugInit(void)
-{
-	#ifdef DEBUG_MODE
-	if( (log_file = fopen("AHTHEXD.LOG", "a") ) == NULL)
-	{
-		return false;
-	}
-	#endif
-	return true;
-}
-
-bool DebugClose(void)
-{
-	#ifdef DEBUG_MODE
-	if(log_file == NULL)
-		return false;
-	return !fclose(log_file);
-	#else
-	return true;
-	#endif
-}
-
-bool DebugPrint(int Errno, uint8_t * lpFileName, int Line, uint8_t * lpMessage)
-{
-	#ifdef DEBUG_MODE
-	time_t ti = time(NULL);
-	struct tm *t = localtime(&ti);
-	DebugInit();
-	if(log_file == NULL)
-		return false;
-	fprintf(log_file, "Date: %02d.%02d.%04d, Time: %02d.%02d.%02d, Errno: %d, File Name: %s, Line: %d\nError: %s\n",
-		t->tm_mday, t->tm_mon+1, t->tm_year+1900, t->tm_hour, t->tm_min, t->tm_sec, Errno, lpFileName, Line, (lpMessage == NULL ? strerror(Errno) : lpMessage));
-	DebugClose();
-	#else
-	// unreferance parameters
-	Errno = Errno, lpFileName = lpFileName, Line = Line, lpMessage = lpMessage;
-	#endif
-	return true;
-}
-
-bool debug(CHAR *pStr, ...)
-{
-	#ifdef DEBUG_MODE
-	va_list ap;
-	DebugInit();
-	if(log_file == NULL)
-		return false;
-	va_start(ap, pStr);
-	vfprintf(log_file, pStr, ap);
-	DebugClose();
-	return true;
-	#else
-	pStr = pStr;
-	return true;
-	#endif
-}
 #endif

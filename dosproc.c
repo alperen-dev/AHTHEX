@@ -1,41 +1,46 @@
-#include "ahtdefs.h"
 #include <stdio.h>
 #include <dos.h>
 #include <i86.h>
 #include <assert.h>
 
+#include "ahtdefs.h"
+#include "console.h"
+#include "log.h"
+
+static uint8_t far * VIDEO_MEMORY = (uint8_t far*)0xB8000000LU;
+
 #define peekb(s, o) (*((uint8_t far*)(((uint32_t)(s) << 16LU) + (o))))
-#define peek(s, o) (*((uint16_t far*)(((uint32_t)(s) << 16LU) + (o))))
+#define peekw(s, o) (*((uint16_t far*)(((uint32_t)(s) << 16LU) + (o))))
 
-#define GET_SCREEN_WIDTH_FAST() (peekb(0x0040, 0x004A))
-#define GET_SCREEN_HEIGHT_FAST() (peekb(0x0040, 0x0084)+1)
-#define GET_VIDEO_MODE_FAST() (peekb(0x0040, 0x0049))
+#define GET_SCREEN_WIDTH_FAST()			(peekb(0x0040, 0x004A))
+#define GET_SCREEN_HEIGHT_FAST()		(peekb(0x0040, 0x0084) + 1)
+#define GET_CURRENT_PAGE_FAST()			(peekb(0x0040, 0x0062))
+#define GET_CURRENT_PAGE_OFFSET_FAST()	(peekw(0x0040, 0x004E))
+#define GET_VIDEO_MODE_FAST()			(peekb(0x0040, 0x0049))
+#define GET_CURSOR_COL_FAST()			(peekb(0x0040, 0x0050 + GET_CURRENT_PAGE_FAST() * 2))
+#define GET_CURSOR_ROW_FAST()			(peekb(0x0040, 0x0050 + GET_CURRENT_PAGE_FAST() * 2 + 1))
 
-/* ANSI.SYS or something similar function tool check */
-#define ANSI_DSR_MAX_ATTEMPT 30000
 
-typedef enum
-{
-	ANSI_SUPPORT_UNKNOWN,
-	ANSI_SUPPORT_YES,
-	ANSI_SUPPORT_NO
-}AnsiSupport;
-AnsiSupport ansiSupport = ANSI_SUPPORT_UNKNOWN;
 
-typedef struct
+static AnsiSupport ansiSupport = ANSI_SUPPORT_UNKNOWN;
+
+typedef struct DOSCOORD
 {
 	uint8_t row;
 	uint8_t col;
-}COORD;
+}DOSCOORD;
+
+uint8_t get_screen_width(void);
 
 uint8_t get_active_page(void);
+uint8_t get_screen_height(void);
 uint8_t get_video_mode(void);
 void set_cursor_pos(uint8_t col, uint8_t row);
-COORD get_cursor_pos(void);
-uint8_t get_cursor_x(void);
-uint8_t get_cursor_y(void);
-static void vram_cread(uint8_t *buffer, size_t length); /* read characters from current cursor position */
-static void vram_cwrite(uint8_t *buffer, size_t size);
+DOSCOORD get_cursor_pos(void);
+uint8_t get_cursor_col(void);
+uint8_t get_cursor_row(void);
+static void vram_readc(uint8_t row, uint8_t col, uint8_t *buffer, size_t size); /* read characters from current cursor position */
+static void vram_writec(uint8_t row, uint8_t col, uint8_t *buffer, size_t size);
 
 static bool check_ansi_interrupt(void)
 {
@@ -43,7 +48,9 @@ static bool check_ansi_interrupt(void)
 	regs.x.ax = 0x1A00;
 	int86(0x2F, &regs, &regs);
 	if(regs.h.al == 0xFF)
+	{
 		return true;
+	}
 	return false;
 }
 
@@ -51,7 +58,7 @@ static bool check_ansi_vram(void)
 {
 	uint8_t orjBuffer[3];
 	bool has_ansi = false;
-	COORD orjPos;
+	DOSCOORD orjPos;
 	uint8_t videoMode = get_video_mode();
 	
 	if(videoMode > 0x03 && videoMode != 0x07) /* if not in text mode, don't try */
@@ -62,16 +69,15 @@ static bool check_ansi_vram(void)
 	orjPos = get_cursor_pos();
 	set_cursor_pos(0, 0);
 	
-	vram_cread(orjBuffer, 3);
+	vram_readc(0, 0, orjBuffer, 3);
 	
 	printf("\x1B[s");
 	fflush(stdout);
 	
 	/* if cursor moved, that mean ANSI.SYS or similar tool is not installed */
-	if(get_cursor_x() > 0)
+	if(get_cursor_col() > 0)
 	{
-		set_cursor_pos(0, 0);
-		vram_cwrite(orjBuffer, 3);
+		vram_writec(0, 0, orjBuffer, 3);
 	}
 	else
 	{
@@ -84,25 +90,31 @@ static bool check_ansi_vram(void)
 
 bool is_ansi_supported(void)
 {
+	printf("asdasd");
+	fflush(stdout);
+	printf("HELLO WORLD %d %d\n", GET_CURSOR_COL_FAST(), GET_CURSOR_ROW_FAST());
 	if(ansiSupport != ANSI_SUPPORT_UNKNOWN) /* already checked */
 		return ansiSupport;
 	
 	if(check_ansi_interrupt() == true)
 	{
-		printf("[+] ANSI support detected using interrupt\n");
+		logf("[+] ANSI support detected using interrupt 2Fh.\n");
 		ansiSupport = ANSI_SUPPORT_YES;
 		return true;
 	}
 	else if(check_ansi_vram() == true) /* if not found on interrupt, check its behaviour */
 	{
-		printf("[+] ANSI support detected using vram\n");
+		logf("[+] ANSI support detected using VRAM.\n");
 		ansiSupport = ANSI_SUPPORT_YES;
 		return true;
 	}
 	else
 	{
+		logf("[-] ANSI support not detected! Using BIOS and VRAM instead.\n");
 		ansiSupport = ANSI_SUPPORT_NO;
 	}
+	
+	
 	return false; /* ANSI driver not found */
 }
 
@@ -148,10 +160,10 @@ void set_cursor_pos(uint8_t col, uint8_t row)
 	int86(0x10, &regs, &regs);
 }
 
-COORD get_cursor_pos(void)
+DOSCOORD get_cursor_pos(void)
 {
 	union REGS regs = {0};
-	COORD coord;
+	DOSCOORD coord;
 	regs.h.ah = 0x03;
 	regs.h.bh = get_active_page();
 	int86(0x10, &regs, &regs);
@@ -160,7 +172,7 @@ COORD get_cursor_pos(void)
 	return coord;
 }
 
-uint8_t get_cursor_x(void)
+uint8_t get_cursor_col(void)
 {
 	union REGS regs = {0};
 	regs.h.ah = 0x03;
@@ -169,7 +181,7 @@ uint8_t get_cursor_x(void)
 	return regs.h.dl;
 }
 
-uint8_t get_cursor_y(void)
+uint8_t get_cursor_row(void)
 {
 	union REGS regs = {0};
 	regs.h.ah = 0x03;
@@ -178,13 +190,12 @@ uint8_t get_cursor_y(void)
 	return regs.h.dh;
 }
 
-static uint8_t far * VIDEO_MEMORY = (uint8_t far*)0xB8000000LU;
+
 
 /* return true on success */
-static void vram_cread(uint8_t *buffer, size_t size)
+static void vram_readc(uint8_t row, uint8_t col, uint8_t *buffer, size_t size)
 {
-	COORD coord = get_cursor_pos();
-	uint8_t far *vidmem = (uint8_t far*)VIDEO_MEMORY + (coord.col + coord.row * GET_SCREEN_WIDTH_FAST());
+	uint8_t far *vidmem = (uint8_t far*)VIDEO_MEMORY + GET_CURRENT_PAGE_OFFSET_FAST() + (col + (uint32_t)row * GET_SCREEN_WIDTH_FAST());
 	size_t i = 0;
 	
 	assert(buffer);
@@ -195,10 +206,9 @@ static void vram_cread(uint8_t *buffer, size_t size)
 	}
 }
 
-static void vram_cwrite(uint8_t *buffer, size_t size)
+static void vram_writec(uint8_t row, uint8_t col, uint8_t *buffer, size_t size)
 {
-	COORD coord = get_cursor_pos();
-	uint8_t far *vidmem = (uint8_t far*)VIDEO_MEMORY + (coord.col + coord.row * GET_SCREEN_WIDTH_FAST());
+	uint8_t far *vidmem = (uint8_t far*)VIDEO_MEMORY + GET_CURRENT_PAGE_OFFSET_FAST() + (col + (uint32_t)row * GET_SCREEN_WIDTH_FAST());
 	size_t i = 0;
 	
 	assert(buffer);
@@ -209,49 +219,17 @@ static void vram_cwrite(uint8_t *buffer, size_t size)
 	}
 }
 
-#if 0
-/* DSR -> device status report */
-static bool check_ansi_dsr(void)
+void vram_putc(uint8_t row, uint8_t col, uint8_t ch)
 {
-	uint32_t attempt = 0;
-	
-	printf("\x1B[6n"); /* DSR request */
-	
-	while(attempt < ANSI_DSR_MAX_ATTEMPT)
-	{
-		if(kbhit())
-		{
-			if(getch() == KB_ESC) /* answer format: ESC[r;c R */
-			{
-				while(kbhit())
-				{
-					getch();
-				}
-				return true;
-			}
-		}
-		attempt++;
-	}
-	printf("\b\b\b\b    \b\b\b\b"); /* clear consol buffer if ANSI driver is not found, its already clean if found */
-	return false;
-}
-#endif
-
-#if 0
-void SetVideoMode(uint8_t VideoMode)
-{
-	union REGS regs = {0};
-	regs.h.al = VideoMode;
-	int86(0x10, &regs, &regs);
+	*((uint8_t far*)VIDEO_MEMORY + GET_CURRENT_PAGE_OFFSET_FAST() + (col + row * GET_SCREEN_WIDTH_FAST()) * 2U) = ch;
 }
 
-uint8_t GetVideoMode(void)
+void vram_puta(uint8_t row, uint8_t col, uint8_t attr)
 {
-	union REGS regs = {0};
-	regs.h.ah = 0x0F;
-	int86(0x10, &regs, &regs);
-	return regs.h.al;
+	*((uint8_t far*)VIDEO_MEMORY + GET_CURRENT_PAGE_OFFSET_FAST() + (col + row * GET_SCREEN_WIDTH_FAST()) * 2U + 1) = attr;
 }
+
+#if 0
 
 void PutChar(uint8_t ch, uint32_t x, uint32_t y)
 {

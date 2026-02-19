@@ -1,4 +1,4 @@
-SRCS = ahthex.c files.c lnklst.c options.c log.c
+SRCS = ahthex.c files.c options.c log.c
 
 # valid TARGET_SYS's are: dos, win16, win32
 !ifndef TARGET_SYS
@@ -39,4 +39,4 @@ $(OBJS): $(SRCS)
     $(CC) $(CFLAGS) -c $<
 
 clean: .SYMBOLIC
-	rm -f $(OBJS) $(NAME).$(EXT) $(NAME).sym
+	rm -f $(OBJS) $(NAME).$(EXT) $(NAME).sym *.log

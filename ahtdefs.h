@@ -1,8 +1,14 @@
-#ifndef __AHTDEFS_H__
-#define __AHTDEFS_H__
+#ifndef AHTDEFS_H
+#define AHTDEFS_H
 
 #include <limits.h>
 #include <stddef.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 
 /* Detect Processor architecture */
 #if defined(__x86_64__) || defined(_M_X64)
@@ -22,6 +28,7 @@
 	#define BITS_32
 #else
 	#define ARCH_UNKNOWN
+	#define BITS_32 /* generic pointer size, not best practice */
 	#warning Unknown CPU architecture
 #endif
 /* Detecting processor architecture ended */
@@ -68,9 +75,69 @@
 		#define PTR_SIZE 2
 	#endif
 #else
-	#error Add your OS flag to one of the above
+	#define OS_UNKNOWN
+	#warning Unknwon OS
 #endif
 /* OS and pointer size detection end */
+
+
+
+/* Detect Endianness (Little Endian vs Big Endian) */
+#if defined(__BYTE_ORDER__) && defined(__ORDER_LITTLE_ENDIAN__) && (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__) /*  GCC/Clang macros */
+	#define ARCH_LITTLE_ENDIAN
+#elif defined(__BYTE_ORDER__) && defined(__ORDER_BIG_ENDIAN__) && (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)
+	#define ARCH_BIG_ENDIAN
+/* Some compilers have special Little-Endian macros. */
+#elif defined(__LITTLE_ENDIAN__) || defined(_LITTLE_ENDIAN) || defined(__ARMEL__) || defined(__THUMBEL__) || defined(__AARCH64EL__)
+	#define ARCH_LITTLE_ENDIAN
+/* Some compilers have special Big-Endian macros. (SPARC, PowerPC) */
+#elif defined(__BIG_ENDIAN__) || defined(_BIG_ENDIAN) || defined(__ARMEB__) || defined(__THUMBEB__) || defined(__AARCH64EB__) || defined(__sparc) || defined(__sparc__) || defined(_POWER) || defined(__powerpc__) || defined(__ppc__)
+	#define ARCH_BIG_ENDIAN
+/* detect from os, architecture */
+#elif defined(ARCH_X86) || defined(ARCH_X86_16) || defined(ARCH_X64) || defined(OS_WIN) || defined(OS_DOS)
+	/* x86, x64 ailesi ve DOS/Windows tabanli sistemler donanimsal olarak Little-Endian'dir */
+	#define ARCH_LITTLE_ENDIAN
+#else
+	#define ARCH_UNKNOWN_ENDIAN
+	#warning Endianness could not be determined at compile time
+#endif
+/* Endianness detection ended */
+
+
+
+/* Detect compiler */
+#if defined(__clang__)
+	#define COMP_CLANG
+#elif defined(__INTEL_COMPILER) || defined(__INTEL_LLVM_COMPILER) || defined(__ICL)
+	#define COMP_INTEL
+#elif defined(__GNUC__) || defined(__GNUG__)
+	#define COMP_GCC
+#elif defined(_MSC_VER)
+	#define COMP_MSVC
+#elif defined(__BORLANDC__) || defined(__TURBOC__)
+	#define COMP_BORLAND
+#elif defined(__WATCOMC__)
+	#define COMP_WATCOM
+#elif defined(__TINYC__)
+	#define COMP_TCC
+#elif defined(__DMC__) || defined(__SC__) || defined(__ZTC__) /* Digital Mars / Symantec / Zortech */
+	#define COMP_DMC
+#elif defined(__SUNPRO_C) || defined(__SUNPRO_CC)
+	#define COMP_SUN
+#elif defined(__IBMC__) || defined(__IBMCPP__) || defined(__xlC__)
+	#define COMP_IBM
+#elif defined(__CC_ARM) || defined(__ARMCC_VERSION)
+	#define COMP_ARM
+#elif defined(__TI_COMPILER_VERSION__)
+	#define COMP_TI
+#elif defined(__PGI)
+	#define COMP_PGI
+#else
+	#define COMP_UNKNOWN
+	#warning Unknown compiler
+#endif
+/* Compiler detection ended */
+
 
 
 
@@ -203,111 +270,12 @@
 #endif
 
 
-
-/* TUI */
-#define ANSI_DOUBLY_TOP_LEFT		"\xC9" /* 201 */
-#define ANSI_DOUBLY_TOP_RIGHT		"\xBB" /* 187 */
-#define ANSI_DOUBLY_BOTTOM_LEFT		"\xC8" /* 200 */
-#define ANSI_DOUBLY_BOTTOM_RIGHT	"\xBC" /* 188 */
-#define ANSI_DOUBLY_VERTICAL		"\xBA" /* 186 */
-#define ANSI_DOUBLY_HORIZONTAL		"\xCD" /* 205 */
-
-#define ANSI_DOUBLY_TOP_CROSS		"\xCB" /* 203 */
-#define ANSI_DOUBLY_BOTTOM_CROSS	"\xCA" /* 202 */
-#define ANSI_DOUBLY_LEFT_CROSS		"\xCC" /* 204 */
-#define ANSI_DOUBLY_RIGHT_CROSS		"\xB9" /* 185 */
-#define ANSI_DOUBLY_CROSS			"\xCE" /* 206 */
-
-#define ANSI_SINGLY_TOP_LEFT		"\xDA" /* 218 */
-#define ANSI_SINGLY_TOP_RIGHT		"\xBF" /* 191 */
-#define ANSI_SINGLY_BOTTOM_LEFT		"\xC0" /* 192 */
-#define ANSI_SINGLY_BOTTOM_RIGHT	"\xD9" /* 217 */
-#define ANSI_SINGLY_VERTICAL		"\xB3" /* 179 */
-#define ANSI_SINGLY_HORIZONTAL		"\xC4" /* 196 */
-
-#define ANSI_SINGLY_TOP_CROSS		"\xC2" /* 194 */
-#define ANSI_SINGLY_BOTTOM_CROSS	"\xC1" /* 193 */
-#define ANSI_SINGLY_LEFT_CROSS		"\xC3" /* 195 */
-#define ANSI_SINGLY_RIGHT_CROSS		"\xB4" /* 180 */
-#define ANSI_SINGLY_CROSS			"\xC5" /* 197 */
+#define MAX(a, b) (((a) > (b)) ? (a) : (b))
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
 
 
-#define UTF_DOUBLY_TOP_LEFT		"\xE2\x95\x94" /* ╔ */
-#define UTF_DOUBLY_TOP_RIGHT	"\xE2\x95\x97" /* ╗ */
-#define UTF_DOUBLY_BOTTOM_LEFT	"\xE2\x95\x9A" /* ╚ */
-#define UTF_DOUBLY_BOTTOM_RIGHT	"\xE2\x95\x9D" /* ╝ */
-#define UTF_DOUBLY_VERTICAL		"\xE2\x95\x91" /* ║ */
-#define UTF_DOUBLY_HORIZONTAL	"\xE2\x95\x90" /* ═ */
-
-#define UTF_DOUBLY_TOP_CROSS	"\xE2\x95\xA6" /* ╦ */
-#define UTF_DOUBLY_BOTTOM_CROSS	"\xE2\x95\xA9" /* ╩ */
-#define UTF_DOUBLY_LEFT_CROSS	"\xE2\x95\xA0" /* ╠ */
-#define UTF_DOUBLY_RIGHT_CROSS	"\xE2\x95\xA3" /* ╣ */
-#define UTF_DOUBLY_CROSS		"\xE2\x95\xAC" /* ╬ */
-
-#define UTF_SINGLY_TOP_LEFT		"\xE2\x94\x8C" /* ┌ */
-#define UTF_SINGLY_TOP_RIGHT	"\xE2\x94\x90" /* ┐ */
-#define UTF_SINGLY_BOTTOM_LEFT	"\xE2\x94\x94" /* └ */
-#define UTF_SINGLY_BOTTOM_RIGHT	"\xE2\x94\x98" /* ┘ */
-#define UTF_SINGLY_VERTICAL		"\xE2\x94\x82" /* │ */
-#define UTF_SINGLY_HORIZONTAL	"\xE2\x94\x80" /* ─ */
-
-#define UTF_SINGLY_TOP_CROSS	"\xE2\x94\xAC" /* ┬ */
-#define UTF_SINGLY_BOTTOM_CROSS	"\xE2\x94\xB4" /* ┴ */
-#define UTF_SINGLY_LEFT_CROSS	"\xE2\x94\x9C" /* ├ */
-#define UTF_SINGLY_RIGHT_CROSS	"\xE2\x94\xA4" /* ┤ */
-#define UTF_SINGLY_CROSS		"\xE2\x94\xBC" /* ┼ */
-
-
-/* Keyboard map */
-#if defined(OS_DOS)
-	#define KB_ESC 27
-	#define KB_CONTROL 0
-	#define KB_UP 72
-	#define KB_DOWN 80
-	#define KB_LEFT 75
-	#define KB_RIGHT 77
-	#define KB_RETURN 13
-	#define KB_CTRL_RETURN 10
-	#define KB_PG_UP 73
-	#define KB_PG_DOWN 81
-	#define KB_HOME 71
-	#define KB_END 79
-	#define KB_CTRL_F 6
-	#define KB_CTRL_RIGHT 116
-	#define KB_CTRL_LEFT 115
-	#define KB_CTRL_S 19
-	#define KB_ALT_S 31
-	#define KB_CTRL_X 24
-	#define KB_CTRL_N 14
-	#define KB_CTRL_O 15
-	#define KB_ALT_O 24
-	#define KB_BACKSPACE 8
-	#define KB_DEL 83 /* control */
-#elif defined(OS_WIN)
-	#define KB_ESC 27
-	#define KB_CONTROL 224
-	#define KB_UP 72
-	#define KB_DOWN 80
-	#define KB_LEFT 75
-	#define KB_RIGHT 77
-	#define KB_RETURN 13
-	#define KB_CTRL_RETURN 10
-	#define KB_PG_UP 73
-	#define KB_PG_DOWN 81
-	#define KB_HOME 71
-	#define KB_END 79
-	#define KB_CTRL_F 6
-	#define KB_CTRL_RIGHT 116
-	#define KB_CTRL_LEFT 115
-	#define KB_CTRL_S 19
-	#define KB_ALT_S 115
-	#define KB_CTRL_X 24
-	#define KB_CTRL_N 14
-	#define KB_CTRL_O 15
-	#define KB_ALT_O 111
-	#define KB_BACKSPACE 8
-	#define KB_DEL 83 /* control */
+#ifdef __cplusplus
+}
 #endif
 
-#endif /* __AHTDEFS_H__ */
+#endif /* AHTDEFS_H */

@@ -1,5 +1,5 @@
-#ifndef __LOG_H__
-#define __LOG_H__
+#ifndef LOG_H
+#define LOG_H
 
 #include "ahtdefs.h"
 
@@ -12,4 +12,4 @@ bool log_close(void);
 bool logf(const char *format, ...);
 bool log_error(int errno, const char *fileName, int line, const char *message);
 
-#endif /* __LOG_H__ */
+#endif /* LOG_H */

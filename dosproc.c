@@ -2,6 +2,7 @@
 #include <dos.h>
 #include <i86.h>
 #include <assert.h>
+#include <stdarg.h>
 
 #include "ahtdefs.h"
 #include "console.h"
@@ -9,8 +10,19 @@
 
 static uint8_t far * VIDEO_MEMORY = (uint8_t far*)0xB8000000LU;
 
-#define peekb(s, o) (*((uint8_t far*)(((uint32_t)(s) << 16LU) + (o))))
-#define peekw(s, o) (*((uint16_t far*)(((uint32_t)(s) << 16LU) + (o))))
+static AnsiSupport ansiSupport = ANSI_SUPPORT_UNKNOWN;
+
+typedef struct DOSCOORD
+{
+	uint8_t row;
+	uint8_t col;
+}DOSCOORD;
+
+
+#define PEEKB(s, o) (*((uint8_t far*)(((uint32_t)(s) << 16LU) + (o))))
+#define PEEKW(s, o) (*((uint16_t far*)(((uint32_t)(s) << 16LU) + (o))))
+#define POKEB(s, o, v) (*((uint8_t far*)(((uint32_t)(s) << 16LU) + (o))) = (v))
+#define POKEW(s, o, v) (*((uint16_t far*)(((uint32_t)(s) << 16LU) + (o))) = (v))
 
 #define GET_SCREEN_WIDTH_FAST()			(peekb(0x0040, 0x004A))
 #define GET_SCREEN_HEIGHT_FAST()		(peekb(0x0040, 0x0084) + 1)
@@ -22,25 +34,279 @@ static uint8_t far * VIDEO_MEMORY = (uint8_t far*)0xB8000000LU;
 
 
 
-static AnsiSupport ansiSupport = ANSI_SUPPORT_UNKNOWN;
+static uint8_t peekb(uint16_t segment, uint16_t offset);
+static uint16_t peekw(uint16_t segment, uint16_t offset);
+static void pokeb(uint16_t segment, uint16_t offset, uint8_t val);
+static void pokew(uint16_t segment, uint16_t offset, uint16_t val);
 
-typedef struct DOSCOORD
-{
-	uint8_t row;
-	uint8_t col;
-}DOSCOORD;
+
+
+static bool check_ansi_interrupt(void);
+static bool check_ansi_vram(void);
 
 uint8_t get_screen_width(void);
-
-uint8_t get_active_page(void);
 uint8_t get_screen_height(void);
 uint8_t get_video_mode(void);
-void set_cursor_pos(uint8_t col, uint8_t row);
+uint8_t get_current_page(void);
 DOSCOORD get_cursor_pos(void);
 uint8_t get_cursor_col(void);
 uint8_t get_cursor_row(void);
-static void vram_readc(uint8_t row, uint8_t col, uint8_t *buffer, size_t size); /* read characters from current cursor position */
+
+void set_cursor_pos(uint8_t col, uint8_t row);
+
+static void vram_readc(uint8_t row, uint8_t col, uint8_t *buffer, size_t size);
+static void vram_reada(uint8_t row, uint8_t col, uint8_t *buffer, size_t size);
+static void vram_read(uint8_t row, uint8_t col, uint16_t *buffer, size_t size);
 static void vram_writec(uint8_t row, uint8_t col, uint8_t *buffer, size_t size);
+static void vram_writea(uint8_t row, uint8_t col, uint8_t *buffer, size_t size);
+static void vram_write(uint8_t row, uint8_t col, uint16_t *buffer, size_t size);
+static void vram_putc(uint8_t row, uint8_t col, uint8_t ch);
+static void vram_puta(uint8_t row, uint8_t col, uint8_t attr);
+static void vram_put(uint8_t row, uint8_t col, uint8_t ch, uint8_t attr);
+static void vram_putsc(uint8_t row, uint8_t col, uint8_t *str);
+static void vram_puts(uint8_t row, uint8_t col, uint8_t *str, uint8_t *attr);
+
+
+
+
+bool is_ansi_supported(void)
+{
+	if(ansiSupport != ANSI_SUPPORT_UNKNOWN) /* already checked */
+		return ansiSupport;
+	
+	if(check_ansi_interrupt() == true)
+	{
+		logf("[+] ANSI support detected using interrupt 2Fh.\n");
+		ansiSupport = ANSI_SUPPORT_YES;
+		return true;
+	}
+	else if(check_ansi_vram() == true) /* if not found on interrupt, check its behaviour */
+	{
+		logf("[+] ANSI support detected using VRAM.\n");
+		ansiSupport = ANSI_SUPPORT_YES;
+		return true;
+	}
+	else
+	{
+		logf("[-] ANSI support not detected! Using BIOS and VRAM instead.\n");
+		ansiSupport = ANSI_SUPPORT_NO;
+	}
+	return false; /* ANSI driver not found */
+}
+
+bool is_utf8_supported(void)
+{
+	return false; /* it's . . . DOS */
+}
+
+
+uint8_t get_screen_width(void)
+{
+	union REGS regs;
+	regs.h.ah = 0x0F;
+	int86(0x10, &regs, &regs);
+	return regs.h.ah;
+}
+
+uint8_t get_screen_height(void)
+{
+	union REGS regs;
+	regs.x.ax = 0x1130;
+	int86(0x10, &regs, &regs);
+	return (regs.h.dl != 0) ? regs.h.dl+1 : 25; /* old BIOSes can return 0, so we are assume there are 25 row */
+}
+
+uint8_t get_video_mode(void)
+{
+	union REGS regs;
+	regs.h.ah = 0x0F;
+	int86(0x10, &regs, &regs);
+	return regs.h.al;
+}
+
+uint8_t get_current_page(void)
+{
+	union REGS regs;
+	regs.h.ah = 0x0F;
+	int86(0x10, &regs, &regs);
+	return regs.h.bh;
+}
+
+DOSCOORD get_cursor_pos(void)
+{
+	union REGS regs = {0};
+	DOSCOORD coord;
+	regs.h.ah = 0x03;
+	regs.h.bh = get_current_page();
+	int86(0x10, &regs, &regs);
+	coord.row = regs.h.dh;
+	coord.col = regs.h.dl;
+	return coord;
+}
+
+uint8_t get_cursor_col(void)
+{
+	union REGS regs = {0};
+	regs.h.ah = 0x03;
+	regs.h.bh = get_current_page();
+	int86(0x10, &regs, &regs);
+	return regs.h.dl;
+}
+
+uint8_t get_cursor_row(void)
+{
+	union REGS regs = {0};
+	regs.h.ah = 0x03;
+	regs.h.bh = get_current_page();
+	int86(0x10, &regs, &regs);
+	return regs.h.dh;
+}
+
+
+void set_video_mode(uint8_t mode)
+{
+	union REGS regs = {0};
+	regs.h.al = mode;
+	int86(0x10, &regs, &regs);
+}
+
+void set_current_page(uint8_t page)
+{
+	union REGS regs = {0};
+	regs.h.ah = 0x05;
+	regs.h.al = page;
+	int86(0x10, &regs, &regs);
+}
+
+void set_cursor_pos(uint8_t col, uint8_t row)
+{
+	union REGS regs = {0};
+	regs.h.ah = 0x02;
+	regs.h.bh = get_current_page();
+	regs.h.dh = row;
+	regs.h.dl = col;
+	int86(0x10, &regs, &regs);
+}
+
+static void vram_readc(uint8_t row, uint8_t col, uint8_t *buffer, size_t size)
+{
+	uint8_t far *vidmem = (uint8_t far*)VIDEO_MEMORY + GET_CURRENT_PAGE_OFFSET_FAST() + (col + (uint16_t)row * GET_SCREEN_WIDTH_FAST()) * 2U;
+	size_t i = 0;
+	
+	assert(buffer);
+	
+	for(i = 0; i < size; i++)
+	{
+		buffer[i] = vidmem[i*2];
+	}
+}
+
+static void vram_reada(uint8_t row, uint8_t col, uint8_t *buffer, size_t size)
+{
+	uint8_t far *vidmem = (uint8_t far*)VIDEO_MEMORY + GET_CURRENT_PAGE_OFFSET_FAST() + (col + (uint16_t)row * GET_SCREEN_WIDTH_FAST()) * 2U + 1;
+	size_t i = 0;
+	
+	assert(buffer);
+	
+	for(i = 0; i < size; i++)
+	{
+		buffer[i] = vidmem[i*2];
+	}
+}
+
+static void vram_read(uint8_t row, uint8_t col, uint16_t *buffer, size_t size)
+{
+	uint16_t far *vidmem = (uint16_t far*)VIDEO_MEMORY + GET_CURRENT_PAGE_OFFSET_FAST() + (col + (uint16_t)row * GET_SCREEN_WIDTH_FAST()) * 2U;
+	size_t i = 0;
+	
+	assert(buffer);
+	
+	for(i = 0; i < size; i++)
+	{
+		buffer[i] = vidmem[i];
+	}
+}
+
+static void vram_writec(uint8_t row, uint8_t col, uint8_t *buffer, size_t size)
+{
+	uint8_t far *vidmem = (uint8_t far*)VIDEO_MEMORY + GET_CURRENT_PAGE_OFFSET_FAST() + (col + (uint16_t)row * GET_SCREEN_WIDTH_FAST()) * 2U;
+	size_t i = 0;
+	
+	assert(buffer);
+	
+	for(i = 0; i < size; i++)
+	{
+		vidmem[i*2] = buffer[i];
+	}
+}
+
+static void vram_writea(uint8_t row, uint8_t col, uint8_t *buffer, size_t size)
+{
+	uint8_t far *vidmem = (uint8_t far*)VIDEO_MEMORY + GET_CURRENT_PAGE_OFFSET_FAST() + (col + (uint16_t)row * GET_SCREEN_WIDTH_FAST()) * 2U + 1;
+	size_t i = 0;
+	
+	assert(buffer);
+	
+	for(i = 0; i < size; i++)
+	{
+		vidmem[i*2] = buffer[i];
+	}
+}
+
+static void vram_write(uint8_t row, uint8_t col, uint16_t *buffer, size_t size)
+{
+	uint16_t far *vidmem = (uint16_t far*)VIDEO_MEMORY + GET_CURRENT_PAGE_OFFSET_FAST() + (col + (uint16_t)row * GET_SCREEN_WIDTH_FAST()) * 2U;
+	size_t i = 0;
+	
+	assert(buffer);
+	
+	for(i = 0; i < size; i++)
+	{
+		vidmem[i] = buffer[i];
+	}
+}
+
+static void vram_putc(uint8_t row, uint8_t col, uint8_t ch)
+{
+	*((uint8_t far*)VIDEO_MEMORY + GET_CURRENT_PAGE_OFFSET_FAST() + (col + (uint16_t)row * GET_SCREEN_WIDTH_FAST()) * 2U) = ch;
+}
+
+static void vram_puta(uint8_t row, uint8_t col, uint8_t attr)
+{
+	*((uint8_t far*)VIDEO_MEMORY + GET_CURRENT_PAGE_OFFSET_FAST() + (col + (uint16_t)row * GET_SCREEN_WIDTH_FAST()) * 2U + 1) = attr;
+}
+
+static void vram_put(uint8_t row, uint8_t col, uint8_t ch, uint8_t attr)
+{
+	*((uint8_t far*)VIDEO_MEMORY + GET_CURRENT_PAGE_OFFSET_FAST() + (col + (uint16_t)row * GET_SCREEN_WIDTH_FAST()) * 2U) = ch;
+	*((uint8_t far*)VIDEO_MEMORY + GET_CURRENT_PAGE_OFFSET_FAST() + (col + (uint16_t)row * GET_SCREEN_WIDTH_FAST()) * 2U + 1) = attr;
+}
+
+static void vram_putsc(uint8_t row, uint8_t col, uint8_t *str)
+{
+	uint8_t far *vidmem = (uint8_t far*)VIDEO_MEMORY + GET_CURRENT_PAGE_OFFSET_FAST() + (col + (uint16_t)row * GET_SCREEN_WIDTH_FAST()) * 2U;
+	
+	assert(str);
+	
+	while(*str != NULL)
+	{
+		*vidmem = *str++;
+		vidmem += 2;
+	}
+}
+
+static void vram_puts(uint8_t row, uint8_t col, uint8_t *str, uint8_t *attr)
+{
+	uint8_t far *vidmem = (uint8_t far*)VIDEO_MEMORY + GET_CURRENT_PAGE_OFFSET_FAST() + (col + (uint16_t)row * GET_SCREEN_WIDTH_FAST()) * 2U;
+
+	assert(str);
+	
+	while(*str != NULL)
+	{
+		*vidmem++ = *str++;
+		*vidmem++ = *attr++;
+	}
+}
 
 static bool check_ansi_interrupt(void)
 {
@@ -88,146 +354,78 @@ static bool check_ansi_vram(void)
 	return has_ansi;
 }
 
-bool is_ansi_supported(void)
+
+static int bios_printf(const char *fmt, ...)
 {
-	printf("asdasd");
-	fflush(stdout);
-	printf("HELLO WORLD %d %d\n", GET_CURSOR_COL_FAST(), GET_CURSOR_ROW_FAST());
-	if(ansiSupport != ANSI_SUPPORT_UNKNOWN) /* already checked */
-		return ansiSupport;
+	va_list args;
+	va_start(args, fmt);
 	
-	if(check_ansi_interrupt() == true)
+	va_end(args);
+}
+
+bool init_console(void)
+{
+	if(is_ansi_supported() == true)
 	{
-		logf("[+] ANSI support detected using interrupt 2Fh.\n");
-		ansiSupport = ANSI_SUPPORT_YES;
-		return true;
-	}
-	else if(check_ansi_vram() == true) /* if not found on interrupt, check its behaviour */
-	{
-		logf("[+] ANSI support detected using VRAM.\n");
-		ansiSupport = ANSI_SUPPORT_YES;
-		return true;
+		printf("ANSI escape sequence supported\n");
+		printf("\x1B[2J");
+		fflush(stdout);
 	}
 	else
 	{
-		logf("[-] ANSI support not detected! Using BIOS and VRAM instead.\n");
-		ansiSupport = ANSI_SUPPORT_NO;
+		printf("ANSI escape sequence not supported\n");
 	}
+	set_current_page(1);
+	printf("Fast detection Lists:\n");
+	printf("GET_SCREEN_WIDTH_FAST: %d\n", GET_SCREEN_WIDTH_FAST());
+	printf("get_screen_width: %d\n", get_screen_width());
+	printf("GET_SCREEN_HEIGHT_FAST: %d\n", GET_SCREEN_HEIGHT_FAST());
+	printf("get_screen_height: %d\n", get_screen_height());
+	printf("GET_CURRENT_PAGE_FAST: %d\n", GET_CURRENT_PAGE_FAST());
+	printf("get_current_page: %d\n", get_current_page());
+	printf("GET_CURRENT_PAGE_OFFSET_FAST: %p\n", GET_CURRENT_PAGE_OFFSET_FAST());
+	printf("GET_VIDEO_MODE_FAST: %d\n", GET_VIDEO_MODE_FAST());
+	printf("get_video_mode: %d\n", get_video_mode());
+	printf("GET_CURSOR_COL_FAST: %d\n", GET_CURSOR_COL_FAST());
+	printf("get_cursor_col: %d\n", get_cursor_col());
+	printf("GET_CURSOR_ROW_FAST: %d\n", GET_CURSOR_ROW_FAST());
+	printf("get_cursor_row: %d\n", get_cursor_row());
+	getchar();
 	
 	
-	return false; /* ANSI driver not found */
+	return true;
 }
 
-uint8_t get_screen_width(void)
+
+
+
+static uint8_t peekb(uint16_t segment, uint16_t offset)
 {
-	union REGS regs;
-	regs.h.ah = 0x0F;
-	int86(0x10, &regs, &regs);
-	return regs.h.ah;
+	return *(uint8_t far*)(((uint32_t)segment << 16) | offset);
 }
 
-uint8_t get_screen_height(void)
+static uint16_t peekw(uint16_t segment, uint16_t offset)
 {
-	union REGS regs;
-	regs.x.ax = 0x1130;
-	int86(0x10, &regs, &regs);
-	return (regs.h.dl != 0) ? regs.h.dl+1 : 25; /* old BIOSes can return 0, so we are assume there are 25 row */
+	return *(uint16_t far*)(((uint32_t)segment << 16) | offset);
 }
 
-uint8_t get_video_mode(void)
+static void pokeb(uint16_t segment, uint16_t offset, uint8_t val)
 {
-	union REGS regs;
-	regs.h.ah = 0x0F;
-	int86(0x10, &regs, &regs);
-	return regs.h.al;
+	*(uint8_t far*)(((uint32_t)segment << 16) | offset) = val;
 }
 
-uint8_t get_active_page(void)
+static void pokew(uint16_t segment, uint16_t offset, uint16_t val)
 {
-	union REGS regs;
-	regs.h.ah = 0x0F;
-	int86(0x10, &regs, &regs);
-	return regs.h.bh;
-}
-
-void set_cursor_pos(uint8_t col, uint8_t row)
-{
-	union REGS regs = {0};
-	regs.h.ah = 0x02;
-	regs.h.bh = get_active_page();
-	regs.h.dh = row;
-	regs.h.dl = col;
-	int86(0x10, &regs, &regs);
-}
-
-DOSCOORD get_cursor_pos(void)
-{
-	union REGS regs = {0};
-	DOSCOORD coord;
-	regs.h.ah = 0x03;
-	regs.h.bh = get_active_page();
-	int86(0x10, &regs, &regs);
-	coord.row = regs.h.dh;
-	coord.col = regs.h.dl;
-	return coord;
-}
-
-uint8_t get_cursor_col(void)
-{
-	union REGS regs = {0};
-	regs.h.ah = 0x03;
-	regs.h.bh = get_active_page();
-	int86(0x10, &regs, &regs);
-	return regs.h.dl;
-}
-
-uint8_t get_cursor_row(void)
-{
-	union REGS regs = {0};
-	regs.h.ah = 0x03;
-	regs.h.bh = get_active_page();
-	int86(0x10, &regs, &regs);
-	return regs.h.dh;
+	*(uint16_t far*)(((uint32_t)segment << 16) | offset) = val;
 }
 
 
 
-/* return true on success */
-static void vram_readc(uint8_t row, uint8_t col, uint8_t *buffer, size_t size)
-{
-	uint8_t far *vidmem = (uint8_t far*)VIDEO_MEMORY + GET_CURRENT_PAGE_OFFSET_FAST() + (col + (uint32_t)row * GET_SCREEN_WIDTH_FAST());
-	size_t i = 0;
-	
-	assert(buffer);
-	
-	for(i = 0; i < size; i++)
-	{
-		buffer[i] = vidmem[i*2];
-	}
-}
 
-static void vram_writec(uint8_t row, uint8_t col, uint8_t *buffer, size_t size)
-{
-	uint8_t far *vidmem = (uint8_t far*)VIDEO_MEMORY + GET_CURRENT_PAGE_OFFSET_FAST() + (col + (uint32_t)row * GET_SCREEN_WIDTH_FAST());
-	size_t i = 0;
-	
-	assert(buffer);
-	
-	for(i = 0; i < size; i++)
-	{
-		vidmem[i*2] = buffer[i];
-	}
-}
 
-void vram_putc(uint8_t row, uint8_t col, uint8_t ch)
-{
-	*((uint8_t far*)VIDEO_MEMORY + GET_CURRENT_PAGE_OFFSET_FAST() + (col + row * GET_SCREEN_WIDTH_FAST()) * 2U) = ch;
-}
 
-void vram_puta(uint8_t row, uint8_t col, uint8_t attr)
-{
-	*((uint8_t far*)VIDEO_MEMORY + GET_CURRENT_PAGE_OFFSET_FAST() + (col + row * GET_SCREEN_WIDTH_FAST()) * 2U + 1) = attr;
-}
+
+
 
 #if 0
 

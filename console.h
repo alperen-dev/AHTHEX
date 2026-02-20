@@ -124,4 +124,6 @@ typedef enum AnsiSupport
 	ANSI_SUPPORT_NO
 }AnsiSupport;
 
+bool init_console(void);
+
 #endif /* CONSOLE_H */

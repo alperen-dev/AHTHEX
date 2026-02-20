@@ -5,16 +5,9 @@
 int main()
 {
 	log_init();
-	if(is_ansi_supported() == true)
-	{
-		printf("ANSI escape sequence supported\n");
-		puts(ANSI_DOUBLY_TOP_LEFT);
-		puts(UTF_DOUBLY_TOP_LEFT);
-	}
-	else
-	{
-		printf("ANSI escape sequence not supported\n");
-	}
+	
+	init_console();
+	
 	log_close();
 	return 0;
 }

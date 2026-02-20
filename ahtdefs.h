@@ -138,6 +138,10 @@ extern "C" {
 #endif
 /* Compiler detection ended */
 
+#if defined(COMP_WATCOM)
+	#define asm _asm
+#endif
+
 
 
 

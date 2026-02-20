@@ -110,6 +110,7 @@
 	#define KB_DEL 83 /* control */
 #endif
 
+#define ANSI_CLEAR_SCREEN "\x1B[2J"
 
 typedef struct COORD
 {

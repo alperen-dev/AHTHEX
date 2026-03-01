@@ -17,6 +17,20 @@
 
 #include "ahtdefs.h"
 
+#if defined(OS_DOS)
+	#include "dosproc.h"
+#elif defined(OS_WIN)
+	#include "winproc.h"
+#elif defined(OS_UNIX)
+	#include "unixproc.h"
+#endif
+
+typedef struct VirtualCursor
+{
+	int16_t		x;	/* column */
+	int16_t		y;	/* row */
+}VirtualCursor;
+
 /* Box characters */
 /* ANSI */
 #define ANSI_DOUBLY_TOP_LEFT		"\xC9" /* 201 */
@@ -126,11 +140,7 @@
 
 #define ANSI_CLEAR_SCREEN "\x1B[2J"
 
-typedef struct COORD
-{
-	int16_t row;
-	int16_t col;
-}COORD;
+
 
 typedef enum AnsiSupport
 {
@@ -139,6 +149,8 @@ typedef enum AnsiSupport
 	ANSI_SUPPORT_NO
 }AnsiSupport;
 
-bool init_console(void);
+extern AnsiSupport ansiSupport;
+
+extern bool init_console(void);
 
 #endif /* CONSOLE_H */

@@ -1,16 +1,16 @@
 /*
- * ahthex - a cross platform hex editor
- * Copyright (C) 2026 alperen-dev
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- */
+* ahthex - a cross platform hex editor
+* Copyright (C) 2026 alperen-dev
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation; either version 2 of the License.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+* GNU General Public License for more details.
+*/
 
 #include <stdio.h>
 #include <dos.h>
@@ -19,128 +19,30 @@
 #include <stdarg.h>
 #include <string.h>
 #include <conio.h>
+#include <malloc.h>
 
-#include "ahtdefs.h"
+#include "dosproc.h"
 #include "console.h"
 #include "log.h"
 
-#define BDA_SEGMENT	0x0040U
+VideoState oldState;
 
-/* monochrome ports */
-#define PORT_MONO_CRTC_INDEX			0x03B4
-#define PORT_MONO_CRTC_DATA				0x03B5
-
-/* VGA ports */
-#define PORT_ATTRIBUTE_CONTROLLER_INDEX	0x03C0	/* read/write index, write data, to reset index/data sequence, Color: in(0x03DA), Mono: in(0x03BA) */
-#define PORT_ATTRIBUTE_CONTROLLER_DATA	0x03C1	/* read only register (data) */
-
-#define PORT_MISCELLANEOUS_INPUT_STATUS	0x03C2	/* read only register (status) */	
-
-#define PORT_MISCELLANEOUS_OUTPUT_WRITE	0x03C2	/* write only register (miscelleneous) */
-#define PORT_MISCELLANEOUS_OUTPUT_READ	0x03CC	/* read only register (miscelleneous) */
-
-#define PORT_SEQUENCER_INDEX			0x03C4
-#define PORT_SEQUENCER_DATA				0x03C5
-
-#define PORT_GDC_INDEX					0x03CE	/* GDC: Graphics Data Controller */
-#define PORT_GDC_DATA					0x03CF	/* GDC: Graphics Data Controller */
-
-#define PORT_COLOR_CRTC_INDEX			0x03D4
-#define PORT_COLOR_CRTC_DATA			0x03D5
-
-
-
-
-static uint8_t far *VIDEO_MEMORY = (uint8_t far*)NULL;
-
-static AnsiSupport ansiSupport = ANSI_SUPPORT_UNKNOWN;
-
-typedef struct DosCoord
+const char *GFX_CARD_NAMES[] = 
 {
-	uint8_t row;
-	uint8_t col;
-}DosCoord;
-
-
-#define PEEKB(s, o) (*((uint8_t far*)(((uint32_t)(s) << 16LU) + (o))))
-#define PEEKW(s, o) (*((uint16_t far*)(((uint32_t)(s) << 16LU) + (o))))
-#define POKEB(s, o, v) (*((uint8_t far*)(((uint32_t)(s) << 16LU) + (o))) = (v))
-#define POKEW(s, o, v) (*((uint16_t far*)(((uint32_t)(s) << 16LU) + (o))) = (v))
-
-#define GET_SCREEN_WIDTH()				(PEEKB(BDA_SEGMENT, 0x004A))
-#define GET_SCREEN_HEIGHT()				(PEEKB(BDA_SEGMENT, 0x0084) + 1)
-#define GET_CURRENT_PAGE()				(PEEKB(BDA_SEGMENT, 0x0062))
-#define GET_CURRENT_PAGE_OFFSET()		(PEEKW(BDA_SEGMENT, 0x004E))
-#define GET_VIDEO_MODE()				(PEEKB(BDA_SEGMENT, 0x0049))
-#define GET_CURSOR_COL()				(PEEKB(BDA_SEGMENT, 0x0050 + GET_CURRENT_PAGE() * 2))
-#define GET_CURSOR_ROW()				(PEEKB(BDA_SEGMENT, 0x0050 + GET_CURRENT_PAGE() * 2 + 1))
-#define GET_CRTC_PORT()					(PEEKW(BDA_SEGMENT, 0x0063))
-#define GET_MODE_SELECT_REGISTER()		(PEEKB(BDA_SEGMENT, 0x0065))
-
-
-
-uint8_t peekb(uint16_t segment, uint16_t offset);
-uint16_t peekw(uint16_t segment, uint16_t offset);
-void pokeb(uint16_t segment, uint16_t offset, uint8_t val);
-void pokew(uint16_t segment, uint16_t offset, uint16_t val);
-
-
-
-static bool check_ansi_interrupt(void);
-static bool check_ansi_vram(void);
-
-uint8_t bios_get_screen_width(void);
-uint8_t bios_get_screen_height(void);
-uint8_t bios_get_video_mode(void);
-uint8_t bios_get_current_page(void);
-DosCoord bios_get_cursor_pos(void);
-uint8_t bios_get_cursor_col(void);
-uint8_t bios_get_cursor_row(void);
-
-void bios_set_video_mode(uint8_t mode);
-void bios_set_current_page(uint8_t page);
-void bios_set_cursor_pos(uint8_t row, uint8_t col);
-
-void vram_readc(uint8_t row, uint8_t col, uint8_t *buffer, size_t size);
-void vram_reada(uint8_t row, uint8_t col, uint8_t *buffer, size_t size);
-void vram_read(uint8_t row, uint8_t col, uint16_t *buffer, size_t size);
-void vram_writec(uint8_t row, uint8_t col, uint8_t *buffer, size_t size);
-void vram_writea(uint8_t row, uint8_t col, uint8_t *buffer, size_t size);
-void vram_write(uint8_t row, uint8_t col, uint16_t *buffer, size_t size);
-void vram_putc(uint8_t row, uint8_t col, uint8_t ch);
-void vram_puta(uint8_t row, uint8_t col, uint8_t attr);
-void vram_put(uint8_t row, uint8_t col, uint8_t ch, uint8_t attr);
-void vram_putsc(uint8_t row, uint8_t col, uint8_t *str);
-void vram_puts(uint8_t row, uint8_t col, uint8_t *str, uint8_t attr);
-
-
-uint8_t peekb(uint16_t segment, uint16_t offset)
-{
-	return *(uint8_t far*)(((uint32_t)segment << 16) | offset);
-}
-
-uint16_t peekw(uint16_t segment, uint16_t offset)
-{
-	return *(uint16_t far*)(((uint32_t)segment << 16) | offset);
-}
-
-void pokeb(uint16_t segment, uint16_t offset, uint8_t val)
-{
-	*(uint8_t far*)(((uint32_t)segment << 16) | offset) = val;
-}
-
-void pokew(uint16_t segment, uint16_t offset, uint16_t val)
-{
-	*(uint16_t far*)(((uint32_t)segment << 16) | offset) = val;
-}
-
-
+	"MDA",
+	"Hercules",
+	"CGA",
+	"EGA",
+	"MCGA",
+	"VGA",
+	"SVGA"
+};
 
 
 
 uint8_t bios_get_screen_width(void)
 {
-	union REGS regs;
+	union REGS regs = {0};
 	regs.h.ah = 0x0F;
 	int86(0x10, &regs, &regs);
 	return regs.h.ah;
@@ -148,7 +50,7 @@ uint8_t bios_get_screen_width(void)
 
 uint8_t bios_get_screen_height(void)
 {
-	union REGS regs;
+	union REGS regs = {0};
 	regs.x.ax = 0x1130;
 	int86(0x10, &regs, &regs);
 	return (regs.h.dl != 0) ? regs.h.dl+1 : 25; /* old BIOSes can return 0, so we are assume there are 25 row */
@@ -156,7 +58,7 @@ uint8_t bios_get_screen_height(void)
 
 uint8_t bios_get_video_mode(void)
 {
-	union REGS regs;
+	union REGS regs = {0};
 	regs.h.ah = 0x0F;
 	int86(0x10, &regs, &regs);
 	return regs.h.al;
@@ -164,22 +66,39 @@ uint8_t bios_get_video_mode(void)
 
 uint8_t bios_get_current_page(void)
 {
-	union REGS regs;
+	union REGS regs = {0};
 	regs.h.ah = 0x0F;
 	int86(0x10, &regs, &regs);
 	return regs.h.bh;
 }
 
-DosCoord bios_get_cursor_pos(void)
+bool bios_get_cursor(HwCursor *hwCursor)
+{
+	uint16_t i = 0;
+	if(hwCursor == NULL)
+		return false;
+	
+	hwCursor->scanLines = PEEKW(BDA_SEGMENT, 0x0060);
+	
+	for(i = 0; i < MAX_PAGE_COUNT; i++)
+	{
+		hwCursor->position[i] = PEEKW(BDA_SEGMENT, 0x0050 + (i << 1));
+	}
+	
+	return true;
+}
+
+void bios_get_cursor_pos(uint8_t *row, uint8_t *col)
 {
 	union REGS regs = {0};
-	DosCoord coord;
 	regs.h.ah = 0x03;
 	regs.h.bh = bios_get_current_page();
 	int86(0x10, &regs, &regs);
-	coord.row = regs.h.dh;
-	coord.col = regs.h.dl;
-	return coord;
+	
+	if(row != NULL)
+		*row = regs.h.dh;
+	if(col != NULL)
+		*col = regs.h.dl;
 }
 
 uint8_t bios_get_cursor_col(void)
@@ -216,6 +135,33 @@ void bios_set_current_page(uint8_t page)
 	int86(0x10, &regs, &regs);
 }
 
+bool bios_set_cursor(const HwCursor *hwCursor)
+{
+	union REGS regs = {0};
+	uint16_t i = 0;
+	if(hwCursor == NULL)
+		return false;
+	
+	regs.h.ah	= 0x01;
+	regs.x.cx	= hwCursor->scanLines;
+	int86(0x10, &regs, &regs);
+	
+	memset(&regs, 0, sizeof(union REGS));
+	
+	regs.h.ah	= 0x02;
+	regs.h.bh	= bios_get_current_page();
+	regs.h.dh	= (uint8_t)(hwCursor->position[regs.h.bh] >> 8);
+	regs.h.dl	= (uint8_t)(hwCursor->position[regs.h.bh]);
+	int86(0x10, &regs, &regs);
+	
+	for(i = 0; i < MAX_PAGE_COUNT; i++)
+	{
+		POKEW(BDA_SEGMENT, 0x0050 + (i << 1), hwCursor->position[i]);
+	}
+	
+	return true;
+}
+
 void bios_set_cursor_pos(uint8_t row, uint8_t col)
 {
 	union REGS regs = {0};
@@ -227,274 +173,130 @@ void bios_set_cursor_pos(uint8_t row, uint8_t col)
 }
 
 
-void vram_readc(uint8_t row, uint8_t col, uint8_t *buffer, size_t size)
-{
-	uint8_t far *vidmem = (uint8_t far*)VIDEO_MEMORY + GET_CURRENT_PAGE_OFFSET() + (col + (uint16_t)row * GET_SCREEN_WIDTH()) * 2U;
-	size_t i = 0;
-	
-	assert(buffer);
-	
-	for(i = 0; i < size; i++)
-	{
-		buffer[i] = vidmem[i*2];
-	}
-}
-
-void vram_reada(uint8_t row, uint8_t col, uint8_t *buffer, size_t size)
-{
-	uint8_t far *vidmem = (uint8_t far*)VIDEO_MEMORY + GET_CURRENT_PAGE_OFFSET() + (col + (uint16_t)row * GET_SCREEN_WIDTH()) * 2U + 1;
-	size_t i = 0;
-	
-	assert(buffer);
-	
-	for(i = 0; i < size; i++)
-	{
-		buffer[i] = vidmem[i*2];
-	}
-}
-
-void vram_read(uint8_t row, uint8_t col, uint16_t *buffer, size_t size)
-{
-	uint16_t far *vidmem = (uint16_t far*)VIDEO_MEMORY + GET_CURRENT_PAGE_OFFSET() + (col + (uint16_t)row * GET_SCREEN_WIDTH()) * 2U;
-	size_t i = 0;
-	
-	assert(buffer);
-	
-	for(i = 0; i < size; i++)
-	{
-		buffer[i] = vidmem[i];
-	}
-}
-
-void vram_writec(uint8_t row, uint8_t col, uint8_t *buffer, size_t size)
-{
-	uint8_t far *vidmem = (uint8_t far*)VIDEO_MEMORY + GET_CURRENT_PAGE_OFFSET() + (col + (uint16_t)row * GET_SCREEN_WIDTH()) * 2U;
-	size_t i = 0;
-	
-	assert(buffer);
-	
-	for(i = 0; i < size; i++)
-	{
-		vidmem[i*2] = buffer[i];
-	}
-}
-
-void vram_writea(uint8_t row, uint8_t col, uint8_t *buffer, size_t size)
-{
-	uint8_t far *vidmem = (uint8_t far*)VIDEO_MEMORY + GET_CURRENT_PAGE_OFFSET() + (col + (uint16_t)row * GET_SCREEN_WIDTH()) * 2U + 1;
-	size_t i = 0;
-	
-	assert(buffer);
-	
-	for(i = 0; i < size; i++)
-	{
-		vidmem[i*2] = buffer[i];
-	}
-}
-
-void vram_write(uint8_t row, uint8_t col, uint16_t *buffer, size_t size)
-{
-	uint16_t far *vidmem = (uint16_t far*)VIDEO_MEMORY + GET_CURRENT_PAGE_OFFSET() + (col + (uint16_t)row * GET_SCREEN_WIDTH()) * 2U;
-	size_t i = 0;
-	
-	assert(buffer);
-	
-	for(i = 0; i < size; i++)
-	{
-		vidmem[i] = buffer[i];
-	}
-}
-
-void vram_putc(uint8_t row, uint8_t col, uint8_t ch)
-{
-	*((uint8_t far*)VIDEO_MEMORY + GET_CURRENT_PAGE_OFFSET() + (col + (uint16_t)row * GET_SCREEN_WIDTH()) * 2U) = ch;
-}
-
-void vram_puta(uint8_t row, uint8_t col, uint8_t attr)
-{
-	*((uint8_t far*)VIDEO_MEMORY + GET_CURRENT_PAGE_OFFSET() + (col + (uint16_t)row * GET_SCREEN_WIDTH()) * 2U + 1) = attr;
-}
-
-void vram_put(uint8_t row, uint8_t col, uint8_t ch, uint8_t attr)
-{
-	*((uint8_t far*)VIDEO_MEMORY + GET_CURRENT_PAGE_OFFSET() + (col + (uint16_t)row * GET_SCREEN_WIDTH()) * 2U) = ch;
-	*((uint8_t far*)VIDEO_MEMORY + GET_CURRENT_PAGE_OFFSET() + (col + (uint16_t)row * GET_SCREEN_WIDTH()) * 2U + 1) = attr;
-}
-
-void vram_putsc(uint8_t row, uint8_t col, uint8_t *str)
-{
-	uint8_t far *vidmem = (uint8_t far*)VIDEO_MEMORY + GET_CURRENT_PAGE_OFFSET() + (col + (uint16_t)row * GET_SCREEN_WIDTH()) * 2U;
-	
-	assert(str);
-	
-	while(*str != NULL)
-	{
-		*vidmem = *str++;
-		vidmem += 2;
-	}
-}
-
-void vram_puts(uint8_t row, uint8_t col, uint8_t *str, uint8_t attr)
-{
-	uint8_t far *vidmem = (uint8_t far*)VIDEO_MEMORY + GET_CURRENT_PAGE_OFFSET() + (col + (uint16_t)row * GET_SCREEN_WIDTH()) * 2U;
-
-	assert(str);
-	
-	while(*str != NULL)
-	{
-		*vidmem++ = *str++;
-		*vidmem++ = attr;
-	}
-}
-
-
-bool is_ansi_supported(void)
-{
-	if(ansiSupport != ANSI_SUPPORT_UNKNOWN) /* already checked */
-		return ansiSupport;
-	
-	if(check_ansi_interrupt() == true)
-	{
-		ansiSupport = ANSI_SUPPORT_YES;
-		return true;
-	}
-	else if(check_ansi_vram() == true) /* if not found on interrupt, check its behaviour */
-	{
-		ansiSupport = ANSI_SUPPORT_YES;
-		return true;
-	}
-	else
-	{
-		ansiSupport = ANSI_SUPPORT_NO;
-	}
-	return false; /* ANSI driver not found */
-}
-
 bool is_utf8_supported(void)
 {
 	return false; /* it's . . . DOS */
 }
 
-/* clear only current page */
-void clear_screen(void)
+
+void vram_fill(uint16_t vSeg, uint16_t vOff, uint16_t count, uint8_t ch, uint8_t attr)
 {
-	if(ansiSupport == ANSI_SUPPORT_YES)
+	uint16_t fillValue = (attr << 8) | ch;
+	asm
 	{
-		printf(ANSI_CLEAR_SCREEN);
-		fflush(stdout);
-	}
-	else
-	{
-		uint16_t videoSegment = ((uint32_t)VIDEO_MEMORY >> 16) + (GET_CURRENT_PAGE_OFFSET() >> 4);
-		uint16_t pageSize = GET_SCREEN_WIDTH() * GET_SCREEN_HEIGHT();
-		asm
-		{
-			push es
-			push di
-			
-			mov ax, videoSegment
-			mov es, ax				; es = videoSegment
-			xor di, di				; di = 0
-			mov cx, pageSize		; cx = pageSize, loop counter
-			mov ax, 0x0720			; background: black, foreground: gray, character: space
-			cld						; di++  at every rep operation
-			rep stosw				; [es:di] = ax, until cx = 0
-			
-			pop di
-			pop es
-		}
-		bios_set_cursor_pos(0, 0);
+		push es
+		push di
+		
+		mov di, vOff
+		mov ax, vSeg
+		mov es, ax
+		
+		mov cx, count			; cx = count, loop counter
+		mov ax, fillValue		; ax = fillValue
+		
+		cld						; di++  at every rep operation
+		rep stosw				; [es:di] = ax, until cx = 0
+		
+		pop di
+		pop es
 	}
 }
 
-
-
-
-static bool check_ansi_interrupt(void)
+void vram_read(const ScreenCell far* videoMemory, ScreenCell far* buffer, uint16_t count)
 {
-	union REGS regs;
-	regs.x.ax = 0x1A00;
-	int86(0x2F, &regs, &regs);
-	if(regs.h.al == 0xFF)
+	asm
 	{
-		return true;
-	}
-	return false;
+		push es
+		push ds
+		push di
+		push si
+
+		mov cx, count			; cx = count
+
+		les di, buffer
+		lds si, videoMemory
+		
+
+		cld						; di++ and si++  at every rep operation
+		rep movsw
+
+		pop si
+		pop di
+		pop ds
+		pop es
+    }
 }
 
-static bool check_ansi_vram(void)
+void vram_write(ScreenCell far* videoMemory, const ScreenCell far* buffer, uint16_t count)
 {
-	uint8_t orjBuffer[3];
-	bool has_ansi = false;
-	DosCoord orjPos;
-	uint8_t videoMode = bios_get_video_mode();
-	
-	if(videoMode > 0x03 && videoMode != 0x07) /* if not in text mode, don't try */
+	asm
 	{
-		return false;
-	}
-	
-	orjPos = bios_get_cursor_pos();
+		push es
+		push ds
+		push di
+		push si
+
+		mov cx, count			; cx = count
+		
+		les di, videoMemory
+		lds si, buffer
+		
+
+		cld						; di++ and si++  at every rep operation
+		rep movsw
+
+		pop si
+		pop di
+		pop ds
+		pop es
+    }
+}
+
+#if 0
+void text_clear_screen(void)
+{
+	uint16_t videoSegment = FP_SEG(videoSegment) + (GET_CURRENT_PAGE_OFFSET() >> 4);
+	uint16_t pageSize = GET_SCREEN_WIDTH() * GET_SCREEN_HEIGHT();
+	vram_fill(videoSegment, pageSize, ' ', 0x07);
 	bios_set_cursor_pos(0, 0);
-	
-	vram_readc(0, 0, orjBuffer, 3);
-	
-	printf("\x1B[s");
-	fflush(stdout);
-	
-	/* if cursor moved, that mean ANSI.SYS or similar tool is not installed */
-	if(bios_get_cursor_col() > 0)
-	{
-		vram_writec(0, 0, orjBuffer, 3);
-	}
-	else
-	{
-		has_ansi = true;
-	}
-	
-	bios_set_cursor_pos(orjPos.row, orjPos.col);
-	return has_ansi;
 }
 
-
-
-
-typedef struct VbeInfoBlock /* VESA BIOS EXTENSION */
+void text_clear_entire_screen(void)
 {
-	char		vesaSignature[4];	/* "VESA" */
-	uint16_t	vesaVersion;
-	uint32_t	oemStringPtr;
-	uint32_t	capabilities;
-	uint32_t	videoModePtr;
-	uint16_t	totalMemory;		/* 64KB unit */
-	char		reserved[492];		/* Complete to 512 byte */
-}VbeInfoBlock;
+	uint16_t videoSegment = ((uint32_t)VIDEO_MEMORY >> 16);
+	
+	vram_fill(FP_SEG(videoMemory), 0, 32768, ' ', 0x07);
+	
+	bios_set_current_page(0);
+	bios_set_cursor_pos(0, 0);
+}
+#endif
 
-const char *GFX_CARD_NAMES[] = 
-{
-	"MDA",
-	"CGA",
-	"EGA",
-	"MCGA",
-	"VGA",
-	"SVGA"
-};
 
-typedef enum GfxCard
-{
-	GFX_UNKNOWN = -1,
-	GFX_MDA = 0,
-	GFX_CGA,
-	GFX_EGA,
-	GFX_MCGA,
-	GFX_VGA,
-	GFX_SVGA
-}GfxCard;
+
+
+
+
+
+
+
+
+
+
+
+
+
+#define VIDEO_TEXT_COLOR	0x03
+#define VIDEO_TEXT_MONO		0x07
 
 static GfxCard get_gfx_card(void)
 {
-	GfxCard gfxCard = GFX_UNKNOWN;
+	static GfxCard gfxCard = GFX_UNKNOWN;
 	union REGS regs = {0};
+	
+	if(gfxCard != GFX_UNKNOWN)
+		return gfxCard;
+	
 	regs.x.ax = 0x1A00;
 	int86(0x10, &regs, &regs);
 	
@@ -571,51 +373,110 @@ static GfxCard get_gfx_card(void)
 	return gfxCard;
 }
 
-static uint16_t get_video_segment(void)
+static ScreenCell far *get_video_memory(void)
 {
 	if(GET_CRTC_PORT() == PORT_MONO_CRTC_INDEX)
 	{
-		return 0xB000;
+		return 0xB0000000;
 	}
 	else /* EGA, VGA, MCGA, SVGA */
 	{
 		if(GET_VIDEO_MODE() > 8)
-			return 0xA000;
+			return 0xA0000000;
 	}
-	return 0xB800;
+	return 0xB8000000;
 }
 
 
+
+
+bool get_video_state(VideoState *videoState)
+{
+	if(videoState == NULL)
+	{
+		return false;
+	}
+	
+	videoState->card			= get_gfx_card();
+	videoState->videoMem		= get_video_memory();
+	videoState->buffer			= NULL;
+	videoState->bufferLength	= 0;
+	videoState->mode			= bios_get_video_mode();
+	videoState->page			= bios_get_current_page();
+	return bios_get_cursor(&videoState->cur);
+}
+
+bool set_video_state(VideoState *videoState)
+{
+	if(videoState == NULL)
+		return false;
+	
+	bios_set_video_mode((uint8_t)videoState->mode);
+	if(videoState->buffer != NULL)
+	{
+		vram_write(videoState->videoMem, videoState->buffer, videoState->bufferLength);
+	}
+	bios_set_current_page(videoState->page);
+	return bios_set_cursor(&videoState->cur);
+}
+
+void log_video_state(VideoState *videoState)
+{
+	uint16_t i = 0;
+	if(videoState == NULL)
+		return;
+	logf("[+] Video Card: %s\n", GFX_CARD_NAMES[videoState->card]);
+	logf("[+] Video Memory: %04X:%04X\n", FP_SEG(videoState->videoMem), FP_OFF(videoState->videoMem));
+	logf("[+] Video Buffer: %04X:%04X\n", FP_SEG(videoState->buffer), FP_OFF(videoState->buffer));
+	logf("[+] Video Buffer Length: %u\n", videoState->bufferLength);
+	logf("[+] Video Mode: %u\n", videoState->mode);
+	logf("[+] Current Page: %u\n", (uint16_t)videoState->page);
+	logf("[+] Cursor Scan Line Start: %02X, End: %02X\n", videoState->cur.scanLines >> 8, videoState->cur.scanLines & 0x00FF);
+	for(i = 0; i < MAX_PAGE_COUNT; i++)
+	{
+		logf("[+] Cursor Position in page %u is Row: %u, Column: %u\n", i, videoState->cur.position[i] >> 8, videoState->cur.position[i] & 0x00FF);
+	}
+}
 
 bool init_console(void)
 {
 	
 	GfxCard gfxCard = get_gfx_card();
-	VIDEO_MEMORY = (uint8_t far*)(((uint32_t)get_video_segment() << 16) | GET_CURRENT_PAGE_OFFSET());
 	
 	
-	if(gfxCard != GFX_UNKNOWN)
-	{
-		logf("[+] Graphics type: %s\n", GFX_CARD_NAMES[gfxCard]);
-	}
-	else
+	
+	if(gfxCard == GFX_UNKNOWN)
 	{
 		logf("[-] Graphics card not detected!\n");
 		return false;
 	}
-	
-	logf("[+] Video memory address: %04X:%04X\n", FP_SEG(VIDEO_MEMORY), FP_OFF(VIDEO_MEMORY));
-
-	
-	
-	if(is_ansi_supported() == true)
+	else
 	{
-		logf("[+] ANSI support detected.\n");
+		logf("[+] Graphics type: %s\n", GFX_CARD_NAMES[gfxCard]);
+	}
+	
+	if(get_video_state(&oldState) == false)
+	{
+		logf("[-] Getting video state failed!\n");
+		return false;
 	}
 	else
 	{
-		logf("[-] ANSI support not detected! Using BIOS and VRAM instead.\n");
+		log_video_state(&oldState);
 	}
+	
+	/*if(gfxCard <= GFX_HERCULES)
+	{
+		bios_set_video_mode(VIDEO_TEXT_MONO);
+	}
+	else
+	{
+		bios_set
+	}
+	
+	
+	logf("[+] Video memory address: %04X:%04X\n", FP_SEG(VIDEO_MEMORY), FP_OFF(VIDEO_MEMORY));*/
+	
 	
 	
 	

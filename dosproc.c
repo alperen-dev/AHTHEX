@@ -1,3 +1,17 @@
+/*
+ * ahthex - a cross platform hex editor
+ * Copyright (C) 2026 alperen-dev
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 #include <stdio.h>
 #include <dos.h>
 #include <i86.h>
@@ -12,17 +26,32 @@
 
 #define BDA_SEGMENT	0x0040U
 
-#define MONO_CRTC_INDEX_PORT		0x03B4
-#define MONO_CRTC_DATA_PORT			0x03B5
-#define GDC_INDEX_PORT				0x03CE	/* GDC: Graphics Data Controller */
-#define GDC_DATA_PORT				0x03CF	/* GDC: Graphics Data Controller */
-#define COLOR_CRTC_INDEX_PORT		0x03D4
-#define COLOR_CRTC_DATA_PORT		0x03D5
+/* monochrome ports */
+#define PORT_MONO_CRTC_INDEX			0x03B4
+#define PORT_MONO_CRTC_DATA				0x03B5
+
+/* VGA ports */
+#define PORT_ATTRIBUTE_CONTROLLER_INDEX	0x03C0	/* read/write index, write data, to reset index/data sequence, Color: in(0x03DA), Mono: in(0x03BA) */
+#define PORT_ATTRIBUTE_CONTROLLER_DATA	0x03C1	/* read only register (data) */
+
+#define PORT_MISCELLANEOUS_INPUT_STATUS	0x03C2	/* read only register (status) */	
+
+#define PORT_MISCELLANEOUS_OUTPUT_WRITE	0x03C2	/* write only register (miscelleneous) */
+#define PORT_MISCELLANEOUS_OUTPUT_READ	0x03CC	/* read only register (miscelleneous) */
+
+#define PORT_SEQUENCER_INDEX			0x03C4
+#define PORT_SEQUENCER_DATA				0x03C5
+
+#define PORT_GDC_INDEX					0x03CE	/* GDC: Graphics Data Controller */
+#define PORT_GDC_DATA					0x03CF	/* GDC: Graphics Data Controller */
+
+#define PORT_COLOR_CRTC_INDEX			0x03D4
+#define PORT_COLOR_CRTC_DATA			0x03D5
 
 
 
 
-static uint8_t far * VIDEO_MEMORY = (uint8_t far*)0xB8000000LU;
+static uint8_t far *VIDEO_MEMORY = (uint8_t far*)NULL;
 
 static AnsiSupport ansiSupport = ANSI_SUPPORT_UNKNOWN;
 
@@ -326,19 +355,16 @@ bool is_ansi_supported(void)
 	
 	if(check_ansi_interrupt() == true)
 	{
-		logf("[+] ANSI support detected using interrupt 2Fh.\n");
 		ansiSupport = ANSI_SUPPORT_YES;
 		return true;
 	}
 	else if(check_ansi_vram() == true) /* if not found on interrupt, check its behaviour */
 	{
-		logf("[+] ANSI support detected using VRAM.\n");
 		ansiSupport = ANSI_SUPPORT_YES;
 		return true;
 	}
 	else
 	{
-		logf("[-] ANSI support not detected! Using BIOS and VRAM instead.\n");
 		ansiSupport = ANSI_SUPPORT_NO;
 	}
 	return false; /* ANSI driver not found */
@@ -380,64 +406,6 @@ void clear_screen(void)
 		bios_set_cursor_pos(0, 0);
 	}
 }
-
-void 
-
-
-bool init_console(void)
-{
-	uint8_t buffer1[64];
-	uint16_t buffer2[64];
-	bios_set_current_page(1);
-	if(is_ansi_supported() == true)
-	{
-		printf("ANSI escape sequence supported\n");
-	}
-	else
-	{
-		printf("ANSI escape sequence not supported\n");
-	}
-	
-	printf("Fast detection Lists:\n");
-	printf("GET_SCREEN_WIDTH_FAST: %d\n", GET_SCREEN_WIDTH());
-	printf("get_screen_width: %d\n", bios_get_screen_width());
-	printf("GET_SCREEN_HEIGHT_FAST: %d\n", GET_SCREEN_HEIGHT());
-	printf("get_screen_height: %d\n", bios_get_screen_height());
-	printf("GET_CURRENT_PAGE_FAST: %d\n", GET_CURRENT_PAGE());
-	printf("get_current_page: %d\n", bios_get_current_page());
-	printf("GET_CURRENT_PAGE_OFFSET_FAST: %p\n", GET_CURRENT_PAGE_OFFSET());
-	printf("GET_VIDEO_MODE_FAST: %d\n", GET_VIDEO_MODE());
-	printf("get_video_mode: %d\n", bios_get_video_mode());
-	printf("GET_CURSOR_COL_FAST: %d\n", GET_CURSOR_COL());
-	printf("get_cursor_col: %d\n", bios_get_cursor_col());
-	printf("GET_CURSOR_ROW_FAST: %d\n", GET_CURSOR_ROW());
-	printf("get_cursor_row: %d\n", bios_get_cursor_row());
-	vram_readc(1, 1, buffer1, 4);
-	printf("(1,1) to (1,5) character at screen is: %.4s\n", buffer1);
-	vram_puta(11, 0, 0x1f);
-	vram_reada(11, 0, buffer1, 1);
-	printf("Attribute at (11,0): %X", buffer1[0]);
-	vram_puts(20, 5, "HELLO WORLD!", 0x2F);
-	getchar();
-	clear_screen();
-	getchar();
-	bios_set_current_page(0);
-	
-	
-	return true;
-}
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -502,14 +470,21 @@ typedef struct VbeInfoBlock /* VESA BIOS EXTENSION */
 	char		reserved[492];		/* Complete to 512 byte */
 }VbeInfoBlock;
 
+const char *GFX_CARD_NAMES[] = 
+{
+	"MDA",
+	"CGA",
+	"EGA",
+	"MCGA",
+	"VGA",
+	"SVGA"
+};
 
 typedef enum GfxCard
 {
-	GFX_UNKNOWN,
-	GFX_MDA,
-	GFX_HERCULES,
+	GFX_UNKNOWN = -1,
+	GFX_MDA = 0,
 	GFX_CGA,
-	GFX_TANDY,
 	GFX_EGA,
 	GFX_MCGA,
 	GFX_VGA,
@@ -518,103 +493,135 @@ typedef enum GfxCard
 
 static GfxCard get_gfx_card(void)
 {
-	static GfxCard gfxCard = GFX_UNKNOWN;
-	if(gfxCard != GFX_UNKNOWN)
+	GfxCard gfxCard = GFX_UNKNOWN;
+	union REGS regs = {0};
+	regs.x.ax = 0x1A00;
+	int86(0x10, &regs, &regs);
+	
+	if(regs.h.al == 0x1A) /* VGA or better found */
 	{
-		return gfxCard;
-	}
-	else
-	{
-		union REGS regs = {0};
-		regs.x.ax = 0x1A00;
-		int86(0x10, &regs, &regs);
+		uint8_t dispComb = regs.h.bl; /* Look ralf brown's interrupt list, Table 00039 (display combination) */
 		
-		if(regs.h.al == 0x1A) /* VGA or better found */
+		
+		/*	Some newer (Back then) EGA cards support 1A00h function even though they aren't capable as VGA.
+			So we check the card is EGA or not	*/
+		regs.x.ax = 0x1C00;
+		regs.x.cx = 0x0001;
+		int86(0x10, &regs, &regs);
+		if(regs.h.al != 0x1C) /* function not supported, that mean card is EGA! */
 		{
-			uint8_t dispComb = regs.h.bl; /* Look ralf brown's interrupt list, Table 00039 (display combination) */
-			
-			
-			/*	Some newer (Back then) EGA cards support 1A00h function even though they aren't capable as VGA.
-				So we check the card is EGA or not	*/
-			regs.x.ax = 0x1C00;
-			regs.x.cx = 0x0001;
-			int86(0x10, &regs, &regs);
-			if(regs.h.al != 0x1A) /* function not supported, that mean card is EGA! */
+			gfxCard = GFX_EGA;
+		}
+		else
+		{
+			if(dispComb == 0x07 || dispComb == 0x08) /* 0x07 monochrome analog display, 0x08 color analog display */
 			{
-				gfxCard = GFX_EGA;
+				/* VGA or SVGA */
+				struct SREGS sregs;
+				VbeInfoBlock vbeInfo;
+				
+				memcpy(vbeInfo.vesaSignature, "VBE2", 4); /* VESA 2.0 request signature "VBE2", required to recieve version 2.0 info */
+				
+				
+				
+				regs.x.ax = 0x4F00;
+				sregs.es = FP_SEG(&vbeInfo);
+				regs.x.di = FP_OFF(&vbeInfo);
+				segread(&sregs);
+				int86x(0x10, &regs, &regs, &sregs);
+				
+				if(regs.h.al == 0x4F) /* VESA supported */
+				{
+					gfxCard = GFX_SVGA;
+				}
+				else /* VESA not found, standard VGA */
+				{
+					gfxCard = GFX_VGA;
+				}
 			}
-			else
+			if(dispComb == 0x0A || dispComb == 0x0B || dispComb == 0x0C) /* 0x0A digital color, 0x0B monochrome analog, 0x0C color analog MCGA */
 			{
-				if(dispComb == 0x07 || dispComb == 0x08) /* 0x07 monochrome analog display, 0x08 color analog display */
-				{
-					/* VGA or SVGA */
-					struct SREGS sregs;
-					VbeInfoBlock vbeInfo;
-					
-					memcpy(vbeInfo.vesaSignature, "VBE2", 4);
-					
-					segread(&sregs);
-					
-					regs.x.ax = 0x4F00;
-					sregs.es = FP_SEG(&vbeInfo);
-					regs.x.di = FP_OFF(&vbeInfo);
-					int86x(0x10, &regs, &regs, &sregs);
-					
-					if(regs.h.al == 0x4F) /* VESA supported */
-					{
-						gfxCard = GFX_SVGA;
-					}
-					else /* VESA not found, standard VGA */
-					{
-						gfxCard = GFX_VGA;
-					}
-				}
-				if(dispComb == 0x0A || dispComb == 0x0B || dispComb == 0x0C) /* 0x0A digital color, 0x0B monochrome analog, 0x0C color analog MCGA */
-				{
-					gfxCard = GFX_MCGA;
-					return gfxCard;
-				}
+				gfxCard = GFX_MCGA;
+				return gfxCard;
 			}
 		}
-		else /* MDA, HERCULES, CGA, EGA, or something older than VGA */
-		{
-			regs.h.ah = 0x12; /* ah=0x12, bl=0x10: get EGA info */
-			regs.x.bx = 0xff10; /* init bh to -1 */
-			regs.x.cx = 0xffff; /* init cx to -1 */
-			int86(0x10, &regs, &regs);
-			if((regs.x.cx == 0xffff) || (regs.h.bh == 0xff)) /* EGA not found */
-			{
-				if(GET_CRTC_PORT() == MONO_CRTC_INDEX_PORT)
-				{
-					gfxCard = GFX_MDA; /* TODO: Add detection for Hercules */
-				}
-				else /* not monochrome port, cga */
-				{
-					gfxCard = GFX_CGA;
-				}
-			}
-			else /* EGA found */
-			{
-				gfxCard = GFX_EGA;
-			}
-		}
-		return gfxCard;
 	}
+	else /* MDA, HERCULES, CGA, EGA, or something older than VGA */
+	{
+		regs.h.ah = 0x12; /* ah=0x12, bl=0x10: get EGA info */
+		regs.x.bx = 0xff10; /* init bh to -1 */
+		regs.x.cx = 0xffff; /* init cx to -1 */
+		int86(0x10, &regs, &regs);
+		if((regs.x.cx == 0xffff) || (regs.h.bh == 0xff)) /* EGA not found */
+		{
+			if(GET_CRTC_PORT() == PORT_MONO_CRTC_INDEX)
+			{
+				gfxCard = GFX_MDA; /* TODO: Add detection for Hercules */
+			}
+			else /* not monochrome port, cga */
+			{
+				gfxCard = GFX_CGA;
+			}
+		}
+		else /* EGA found */
+		{
+			gfxCard = GFX_EGA;
+		}
+	}
+	return gfxCard;
 }
 
 static uint16_t get_video_segment(void)
 {
-	
-	if(GET_CRTC_PORT() == MONO_CRTC_INDEX_PORT)
+	if(GET_CRTC_PORT() == PORT_MONO_CRTC_INDEX)
 	{
 		return 0xB000;
 	}
 	else /* EGA, VGA, MCGA, SVGA */
 	{
-		outp();
+		if(GET_VIDEO_MODE() > 8)
+			return 0xA000;
 	}
 	return 0xB800;
 }
+
+
+
+bool init_console(void)
+{
+	
+	GfxCard gfxCard = get_gfx_card();
+	VIDEO_MEMORY = (uint8_t far*)(((uint32_t)get_video_segment() << 16) | GET_CURRENT_PAGE_OFFSET());
+	
+	
+	if(gfxCard != GFX_UNKNOWN)
+	{
+		logf("[+] Graphics type: %s\n", GFX_CARD_NAMES[gfxCard]);
+	}
+	else
+	{
+		logf("[-] Graphics card not detected!\n");
+		return false;
+	}
+	
+	logf("[+] Video memory address: %04X:%04X\n", FP_SEG(VIDEO_MEMORY), FP_OFF(VIDEO_MEMORY));
+
+	
+	
+	if(is_ansi_supported() == true)
+	{
+		logf("[+] ANSI support detected.\n");
+	}
+	else
+	{
+		logf("[-] ANSI support not detected! Using BIOS and VRAM instead.\n");
+	}
+	
+	
+	
+	return true;
+}
+
 
 #if 0
 bool SetScreenResolution(uint16_t Row)

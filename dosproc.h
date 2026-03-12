@@ -18,6 +18,14 @@
 #include "ahtdefs.h"
 #include <dos.h>
 
+#if defined(COMP_WATCOM)
+	#include <malloc.h>
+	#define farmalloc	_fmalloc
+	#define farcalloc	_fcalloc
+	#define farrealloc	_frealloc
+	#define farfree		_ffree
+#endif
+
 #define BDA_SEGMENT	0x0040U
 
 
@@ -44,7 +52,8 @@
 #define PORT_COLOR_CRTC_DATA			0x03D5
 
 
-#define VMEM_BUFFER_SIZE				32768U
+#define CURSOR_INVISIBLE				0x2000
+#define CURSOR_VISIBLE					0x0607
 
 #define MAX_PAGE_COUNT					8
 
@@ -57,12 +66,14 @@
 #define GET_SCREEN_WIDTH()				(PEEKB(BDA_SEGMENT, 0x004A))
 #define GET_SCREEN_HEIGHT()				(PEEKB(BDA_SEGMENT, 0x0084) + 1)
 #define GET_CURRENT_PAGE()				(PEEKB(BDA_SEGMENT, 0x0062))
+#define GET_PAGE_SIZE()					(PEEKW(BDA_SEGMENT, 0x004C))
 #define GET_CURRENT_PAGE_OFFSET()		(PEEKW(BDA_SEGMENT, 0x004E))
 #define GET_VIDEO_MODE()				(PEEKB(BDA_SEGMENT, 0x0049))
 #define GET_CURSOR_COL()				(PEEKB(BDA_SEGMENT, 0x0050 + GET_CURRENT_PAGE() * 2))
 #define GET_CURSOR_ROW()				(PEEKB(BDA_SEGMENT, 0x0050 + GET_CURRENT_PAGE() * 2 + 1))
 #define GET_CRTC_PORT()					(PEEKW(BDA_SEGMENT, 0x0063))
 #define GET_MODE_SELECT_REGISTER()		(PEEKB(BDA_SEGMENT, 0x0065))
+
 
 typedef struct VbeInfoBlock /* VESA BIOS EXTENSION */
 {
@@ -74,6 +85,7 @@ typedef struct VbeInfoBlock /* VESA BIOS EXTENSION */
 	uint16_t	totalMemory;		/* 64KB unit */
 	char		reserved[492];		/* Complete to 512 byte */
 }VbeInfoBlock;
+
 
 typedef enum GfxCard
 {
@@ -87,20 +99,26 @@ typedef enum GfxCard
 	GFX_SVGA
 }GfxCard;
 
+#pragma pack(push, 1)
+
 typedef struct ScreenCell
 {
 	uint8_t		ch;
 	uint8_t		attr;
 }ScreenCell;
 
+#pragma pack(pop)
+
 typedef uint16_t	VideoMode;
 typedef uint8_t		VideoPage;
+
 
 typedef struct HwCursor
 {
 	uint16_t	position[MAX_PAGE_COUNT];
 	uint16_t	scanLines;
 }HwCursor;
+
 
 typedef struct VideoState
 {
@@ -119,6 +137,13 @@ typedef struct VideoState
 
 extern const char *GFX_CARD_NAMES[];
 
+
+void put_char(uint16_t row, uint16_t col, char ch);
+void put_color(uint16_t row, uint16_t col, uint8_t attr);
+void put_cell(uint16_t row, uint16_t col, ScreenCell cell);
+void put_str(uint16_t row, uint16_t col, char *str);
+void put_cstr(uint16_t row, uint16_t col, char *str, uint8_t attr);
+bool update(void);
 
 
 

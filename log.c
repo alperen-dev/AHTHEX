@@ -53,7 +53,7 @@ bool log_init(void)
 		char buffer[64];
 		logf("[+] Logger Started at %s\n", get_time_as_string(buffer, sizeof(buffer)));
 	}
-	
+	setvbuf(logFile, NULL, _IONBF, 0);
 	return true;
 }
 

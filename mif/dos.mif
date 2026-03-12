@@ -10,5 +10,5 @@ WATCOM	=	$(%WATCOM)
 
 SRCS += dosproc.c
 
-CFLAGS	=	-Wall -Wextra -b $(SYSTEM) -march=i86 -mabi=cdecl -fpack-struct=2 -mregparm=0 -mcmodel=mt -I="$(WATCOM)/h"
+CFLAGS	=	-Wno-n101 -Wall -Wextra -b $(SYSTEM) -march=i86 -mabi=cdecl -fpack-struct=2 -mregparm=0 -mcmodel=mt -I="$(WATCOM)/h"
 LDFLAGS	=	$(CFLAGS) -Wl,"option quiet" -Wl,"disable 1019"

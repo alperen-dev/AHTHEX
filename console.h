@@ -151,6 +151,7 @@ typedef enum AnsiSupport
 
 extern AnsiSupport ansiSupport;
 
-extern bool init_console(void);
+extern bool console_init(void);
+extern bool console_close(void);
 
 #endif /* CONSOLE_H */

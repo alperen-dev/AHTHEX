@@ -18,9 +18,31 @@
 
 int main()
 {
-	log_init();
+	int i = 0;
+	if(log_init() == false)
+	{
+		fprintf(stderr, "Log initialization failed!\n");
+		return 1;
+	}
 	
-	init_console();
+	if(console_init() == false)
+	{
+		fprintf(stderr, "Console initialization failed!\n");
+		return 1;
+	}
+	
+	getchar();
+	for(i = 0; i < 100; i++)
+	{
+		put_color(0, i, 0x07);
+		put_char(0, i, 'A');
+	}
+	getchar();
+	update();
+	getchar();
+	
+	
+	console_close();
 	
 	log_close();
 	return 0;

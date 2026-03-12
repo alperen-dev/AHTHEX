@@ -25,8 +25,6 @@
 #include "console.h"
 #include "log.h"
 
-VideoState oldState;
-
 const char *GFX_CARD_NAMES[] = 
 {
 	"MDA",
@@ -72,11 +70,10 @@ uint8_t bios_get_current_page(void)
 	return regs.h.bh;
 }
 
-bool bios_get_cursor(HwCursor *hwCursor)
+void bios_get_cursor(HwCursor *hwCursor)
 {
 	uint16_t i = 0;
-	if(hwCursor == NULL)
-		return false;
+	assert(hwCursor);
 	
 	hwCursor->scanLines = PEEKW(BDA_SEGMENT, 0x0060);
 	
@@ -84,8 +81,6 @@ bool bios_get_cursor(HwCursor *hwCursor)
 	{
 		hwCursor->position[i] = PEEKW(BDA_SEGMENT, 0x0050 + (i << 1));
 	}
-	
-	return true;
 }
 
 void bios_get_cursor_pos(uint8_t *row, uint8_t *col)
@@ -135,12 +130,11 @@ void bios_set_current_page(uint8_t page)
 	int86(0x10, &regs, &regs);
 }
 
-bool bios_set_cursor(const HwCursor *hwCursor)
+void bios_set_cursor(const HwCursor *hwCursor)
 {
 	union REGS regs = {0};
 	uint16_t i = 0;
-	if(hwCursor == NULL)
-		return false;
+	assert(hwCursor);
 	
 	regs.h.ah	= 0x01;
 	regs.x.cx	= hwCursor->scanLines;
@@ -158,8 +152,6 @@ bool bios_set_cursor(const HwCursor *hwCursor)
 	{
 		POKEW(BDA_SEGMENT, 0x0050 + (i << 1), hwCursor->position[i]);
 	}
-	
-	return true;
 }
 
 void bios_set_cursor_pos(uint8_t row, uint8_t col)
@@ -179,23 +171,20 @@ bool is_utf8_supported(void)
 }
 
 
-void vram_fill(uint16_t vSeg, uint16_t vOff, uint16_t count, uint8_t ch, uint8_t attr)
+void vram_fill(ScreenCell far* videoMemory, ScreenCell fillValue, uint16_t count)
 {
-	uint16_t fillValue = (attr << 8) | ch;
 	asm
 	{
 		push es
 		push di
 		
-		mov di, vOff
-		mov ax, vSeg
-		mov es, ax
+		mov cx, count				; cx = count, loop counter
+		mov ax, word ptr fillValue	; ax = fillValue
 		
-		mov cx, count			; cx = count, loop counter
-		mov ax, fillValue		; ax = fillValue
+		les di, videoMemory
 		
-		cld						; di++  at every rep operation
-		rep stosw				; [es:di] = ax, until cx = 0
+		cld							; di++  at every rep operation
+		rep stosw					; [es:di] = ax, until cx = 0
 		
 		pop di
 		pop es
@@ -284,6 +273,21 @@ void text_clear_entire_screen(void)
 
 
 
+/* Enabled by default, disabled if graphics card doesn't have page flipping capability */
+bool usePageFlipping = true;
+
+VideoState oldState;
+VideoState v; /* current video state */
+
+ScreenCell far* firstPageMem	= NULL;
+ScreenCell far* secondPageMem	= NULL;
+
+/* 0 and 2, 2 for compatibility reason */
+VideoPage firstPageNumber	= 0;
+VideoPage secondPageNumber	= 2;
+
+/* 4096 by default, user can change this settings from settings menu [0-65535] (0 mean disabled), or 0 automatically if buffer allocation failed */
+size_t oldVideoBufferSize = 4096U;
 
 
 #define VIDEO_TEXT_COLOR	0x03
@@ -388,22 +392,126 @@ static ScreenCell far *get_video_memory(void)
 }
 
 
-
-
-bool get_video_state(VideoState *videoState)
+VideoPage get_other_page(VideoPage currPage)
 {
-	if(videoState == NULL)
+	if(currPage == firstPageNumber)
+	{
+		return secondPageNumber;
+	}
+	/* return firstPage if not currently in firstPage (for speed) */
+	return firstPageNumber;
+}
+
+ScreenCell far *get_page_memory(VideoMode page)
+{
+	if(page == firstPageNumber)
+	{
+		return firstPageMem;
+	}
+	else if(page == secondPageNumber)
+	{
+		return secondPageMem;
+	}
+	return NULL;
+}
+
+bool flip_page(void)
+{
+	VideoPage page = 0;
+	ScreenCell far *mem = NULL;
+	if(usePageFlipping == false)
+		return false;
+	page	= get_other_page(v.page);
+	if((mem	= get_page_memory(page)) == NULL)
 	{
 		return false;
 	}
+	v.page		= page;
+	v.videoMem	= mem;
+	bios_set_current_page(v.page);
+	return true;
+}
+
+bool update(void)
+{
+	if(v.buffer == NULL)
+		return false;
+	if(usePageFlipping)
+	{
+		ScreenCell far* otherMem = get_page_memory(get_other_page(v.page));
+		logf("%u bytes write from %04X:%04X to %04X:%04X\n", v.bufferLength, FP_SEG(v.buffer), FP_OFF(v.buffer), FP_SEG(v.videoMem), FP_OFF(v.videoMem));
+		vram_write(otherMem, v.buffer, v.bufferLength);
+		flip_page();
+	}
+	else
+	{
+		logf("%u bytes write from %04X:%04X to %04X:%04X\n", v.bufferLength, FP_SEG(v.buffer), FP_OFF(v.buffer), FP_SEG(v.videoMem), FP_OFF(v.videoMem));
+		vram_write(v.videoMem, v.buffer, v.bufferLength);
+	}
+	return true;
+}
+
+void put_char(uint16_t row, uint16_t col, char ch)
+{
+	v.buffer[row * GET_SCREEN_WIDTH() + col].ch = ch;
+}
+
+void put_color(uint16_t row, uint16_t col, uint8_t attr)
+{
+	v.buffer[row * GET_SCREEN_WIDTH() + col].attr = attr;
+}
+
+void put_cell(uint16_t row, uint16_t col, ScreenCell cell)
+{
+	v.buffer[row * GET_SCREEN_WIDTH() + col] = cell;
+}
+
+void put_str(uint16_t row, uint16_t col, char *str)
+{
+	size_t index = row * GET_SCREEN_WIDTH() + col;
+	while(index < v.bufferLength && *str != '\0')
+	{
+		v.buffer[index++].ch = *str++;
+	}
+}
+
+void put_cstr(uint16_t row, uint16_t col, char *str, uint8_t attr)
+{
+	size_t index = row * GET_SCREEN_WIDTH() + col;
+	while(index < v.bufferLength && *str != '\0')
+	{
+		v.buffer[index].ch = *str++;
+		v.buffer[index++].attr = attr;
+	}
+}
+
+
+void get_video_state(VideoState *videoState)
+{
+	assert(videoState);
 	
-	videoState->card			= get_gfx_card();
-	videoState->videoMem		= get_video_memory();
-	videoState->buffer			= NULL;
-	videoState->bufferLength	= 0;
+	videoState->card		= get_gfx_card();
+	videoState->videoMem	= get_video_memory();
+	
+	if(videoState->bufferLength > 0)
+	{
+		videoState->buffer			= (ScreenCell far*)farcalloc(videoState->bufferLength, sizeof(ScreenCell));
+		if(videoState->buffer != NULL)
+		{
+			vram_read(videoState->videoMem, videoState->buffer, videoState->bufferLength);
+		}
+		else
+		{
+			videoState->bufferLength	= 0;
+		}
+	}
+	else
+	{
+		videoState->buffer			= NULL;
+	}
 	videoState->mode			= bios_get_video_mode();
 	videoState->page			= bios_get_current_page();
-	return bios_get_cursor(&videoState->cur);
+	bios_get_cursor(&videoState->cur);
 }
 
 bool set_video_state(VideoState *videoState)
@@ -417,7 +525,8 @@ bool set_video_state(VideoState *videoState)
 		vram_write(videoState->videoMem, videoState->buffer, videoState->bufferLength);
 	}
 	bios_set_current_page(videoState->page);
-	return bios_set_cursor(&videoState->cur);
+	bios_set_cursor(&videoState->cur);
+	return true;
 }
 
 void log_video_state(VideoState *videoState)
@@ -438,51 +547,111 @@ void log_video_state(VideoState *videoState)
 	}
 }
 
-bool init_console(void)
+
+
+bool console_init(void)
 {
-	
-	GfxCard gfxCard = get_gfx_card();
-	
+	v.card = get_gfx_card();
 	
 	
-	if(gfxCard == GFX_UNKNOWN)
+	/* Check video card */
+	if(v.card == GFX_UNKNOWN)
 	{
 		logf("[-] Graphics card not detected!\n");
 		return false;
 	}
 	else
 	{
-		logf("[+] Graphics type: %s\n", GFX_CARD_NAMES[gfxCard]);
+		logf("[+] Graphics type: %s\n", GFX_CARD_NAMES[v.card]);
 	}
 	
-	if(get_video_state(&oldState) == false)
+	logf("[?] Attempting to create double buffering memory . . .\n");
+	v.bufferLength		= GET_PAGE_SIZE()>>1;
+	if((v.buffer = farcalloc(v.bufferLength, sizeof(ScreenCell))) == NULL)
 	{
-		logf("[-] Getting video state failed!\n");
+		logf("[-] Double buffering memory creation failed!\n");
 		return false;
 	}
 	else
 	{
-		log_video_state(&oldState);
+		logf("[+] Double buffering memory creation succeeded (%u byte).\n", v.bufferLength * sizeof(ScreenCell));
 	}
 	
-	/*if(gfxCard <= GFX_HERCULES)
+	
+	/* save old video state */
+	oldState.bufferLength = oldVideoBufferSize>>1;
+	get_video_state(&oldState);
+	/*log_video_state(&oldState);*/
+	
+	
+	if(v.card <= GFX_HERCULES)
 	{
-		bios_set_video_mode(VIDEO_TEXT_MONO);
+		v.mode = VIDEO_TEXT_MONO;
+		if(usePageFlipping == true)
+		{
+			logf("[-] Page flipping disabled due to hardware limitation.\n");
+			usePageFlipping = false;
+		}
 	}
 	else
 	{
-		bios_set
+		v.mode = VIDEO_TEXT_COLOR;
+	}
+	bios_set_video_mode(v.mode);
+	logf("[+] Video mode set as %d\n", v.mode);
+	
+	/* test pages, if page flipping enabled */
+	if(usePageFlipping)
+	{
+		bios_set_current_page(firstPageNumber);
+		firstPageMem = get_video_memory() + GET_CURRENT_PAGE_OFFSET();
+		bios_set_current_page(secondPageNumber);
+		secondPageMem = get_video_memory() + (GET_CURRENT_PAGE_OFFSET()>>1);
+		
+		logf("[+] %uth page memory: %04X:%04X\n", firstPageNumber, FP_SEG(firstPageMem), FP_OFF(firstPageMem));
+		logf("[+] %uth page memory: %04X:%04X\n", secondPageNumber, FP_SEG(secondPageMem), FP_OFF(secondPageMem));
+	}
+	else
+	{
+		firstPageMem = get_video_memory() + GET_CURRENT_PAGE_OFFSET();
+		secondPageMem = firstPageMem;
 	}
 	
 	
-	logf("[+] Video memory address: %04X:%04X\n", FP_SEG(VIDEO_MEMORY), FP_OFF(VIDEO_MEMORY));*/
+	v.page 			= firstPageNumber;
+	v.cur.scanLines	= CURSOR_INVISIBLE;
 	
 	
+	bios_set_current_page(v.page);
+	bios_set_cursor(&v.cur);
+	
+	v.videoMem			= firstPageMem;
+	
+	log_video_state(&v);
 	
 	
 	return true;
 }
 
+bool console_close(void)
+{
+	bool retVal = set_video_state(&oldState);
+	if(v.buffer != NULL)
+	{
+		logf("[+] Video buffer freed.\n");
+		farfree(v.buffer);
+		v.buffer = NULL;
+		v.bufferLength = 0;
+	}
+	
+	if(oldState.buffer != NULL)
+	{
+		farfree(oldState.buffer);
+		oldState.buffer = NULL;
+		oldState.bufferLength = 0;
+	}
+	return retVal;
+}
 
 #if 0
 bool SetScreenResolution(uint16_t Row)

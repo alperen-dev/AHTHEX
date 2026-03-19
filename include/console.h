@@ -19,8 +19,8 @@
 
 #if defined(OS_DOS)
 	#include "dosproc.h"
-#elif defined(OS_WIN)
-	#include "winproc.h"
+#elif defined(OS_WIN_32) || defined(OS_WIN_64)
+	#include "w32proc.h"
 #elif defined(OS_UNIX)
 	#include "unixproc.h"
 #endif

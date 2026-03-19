@@ -18,6 +18,7 @@
 
 int main()
 {
+	#if 0
 	int i = 0;
 	if(log_init() == false)
 	{
@@ -46,6 +47,7 @@ int main()
 	
 	log_close();
 	return 0;
+	#endif
 }
 
 #if 0

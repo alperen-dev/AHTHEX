@@ -27,8 +27,8 @@
 
 
 
-SRCS	= $(DIR_SOURCE)/ahthex.c $(DIR_SOURCE)/files.c $(DIR_SOURCE)/options.c $(DIR_SOURCE)/log.c
-OBJS	= $(DIR_BUILD)/ahthex.$(OBJ_EXT) $(DIR_BUILD)/files.$(OBJ_EXT) $(DIR_BUILD)/options.$(OBJ_EXT) $(DIR_BUILD)/log.$(OBJ_EXT)
+SRCS	= $(DIR_SOURCE)/main.c $(DIR_SOURCE)/files.c $(DIR_SOURCE)/options.c $(DIR_SOURCE)/log.c
+OBJS	= $(DIR_BUILD)/main.$(OBJ_EXT) $(DIR_BUILD)/files.$(OBJ_EXT) $(DIR_BUILD)/options.$(OBJ_EXT) $(DIR_BUILD)/log.$(OBJ_EXT)
 
 # valid TARGET_SYS's are: dos, w16, w32. default dos
 !ifndef TARGET_SYS

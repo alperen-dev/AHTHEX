@@ -12,7 +12,9 @@
 * GNU General Public License for more details.
 */
 
-#include "ahthex.h"
+#include "w32proc.h"
+#include "console.h"
+#include "log.h"
 
 bool is_ansi_supported(void)
 {
@@ -27,6 +29,8 @@ bool is_ansi_supported(void)
 		return true;
 	return false;
 }
+
+#if 0
 
 void SetVideoMode(uint8_t VideoMode) /* Do NOTHING */
 {
@@ -398,3 +402,5 @@ bool debug(CHAR *pStr, ...)
 	return true;
 	#endif
 }
+
+#endif

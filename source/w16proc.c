@@ -28,6 +28,8 @@ bool is_ansi_supported(void)
 	return false;
 }
 
+#if 0
+
 void SetVideoMode(uint8_t VideoMode) /* Do NOTHING */
 {
 	UNREFERENCED_PARAMETER(VideoMode);
@@ -398,3 +400,5 @@ bool debug(CHAR *pStr, ...)
 	return true;
 	#endif
 }
+
+#endif

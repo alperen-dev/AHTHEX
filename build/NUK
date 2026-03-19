@@ -1,0 +1,7 @@
+Open Watcom Make Version 2.0 beta Jan 31 2026 03:29:29 (64-bit)
+Copyright (c) 2002-2026 The Open Watcom Contributors. All Rights Reserved.
+Portions Copyright (c) 1988-2002 Sybase, Inc. All Rights Reserved.
+Source code is available under the Sybase Open Watcom Public License.
+See https://github.com/open-watcom/open-watcom-v2#readme for details.
+	owcc -Wno-n101 -Wall -Wextra -b com -march=i86 -mabi=cdecl -fpack-struct=2 -mregparm=0 -mcmodel=mt -I="C:\Users\AHT\ahttools\openwatcom/h" -I="../include" -c ..\source\ahthex.c ..\source\files.c ..\source\options.c ..\source\log.c ..\source\dosproc.c
+	owcc ./ahthex.obj ./files.obj ./options.obj ./log.obj ./dosproc.obj -o AHTHEXD.COM -Wno-n101 -Wall -Wextra -b com -march=i86 -mabi=cdecl -fpack-struct=2 -mregparm=0 -mcmodel=mt -I="C:\Users\AHT\ahttools\openwatcom/h" -I="../include" -Wl,"option quiet" -Wl,"disable 1019"

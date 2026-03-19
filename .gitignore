@@ -50,6 +50,8 @@
 *.x86_64
 *.hex
 *.COM
+*.img
+*.IMG
 
 # Debug files
 *.dSYM/

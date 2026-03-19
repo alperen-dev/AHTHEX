@@ -1,0 +1,1 @@
+wmake /f wmake.mak TARGET_SYS=dos clean 1> NUL && wmake /f wmake.mak TARGET_SYS=dos 1> NUL && mkfloppy.cmd 1> NUL

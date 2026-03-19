@@ -1,0 +1,1 @@
+wmake /f wmake.mak TARGET_SYS=w32 clean 1> NUL && wmake /f wmake.mak TARGET_SYS=w32 1> NUL

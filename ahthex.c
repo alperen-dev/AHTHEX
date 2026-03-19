@@ -1,4 +1,54 @@
-#include "AHTHEX.H"
+/*
+* ahthex - a cross platform hex editor
+* Copyright (C) 2026 alperen-dev
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation; either version 2 of the License.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+* GNU General Public License for more details.
+*/
+
+#include "ahthex.h"
+#include "console.h"
+#include "log.h"
+
+int main()
+{
+	int i = 0;
+	if(log_init() == false)
+	{
+		fprintf(stderr, "Log initialization failed!\n");
+		return 1;
+	}
+	
+	if(console_init() == false)
+	{
+		fprintf(stderr, "Console initialization failed!\n");
+		return 1;
+	}
+	
+	getchar();
+	for(i = 0; i < 100; i++)
+	{
+		put_color(0, i, 0x07);
+		put_char(0, i, 'A');
+	}
+	getchar();
+	update();
+	getchar();
+	
+	
+	console_close();
+	
+	log_close();
+	return 0;
+}
+
+#if 0
 
 #define print_help_message() printf("AHTHEX <filename1> [filename2] ... [filename32]\n")
 
@@ -164,9 +214,9 @@ void control_keys(uint8_t secondaryByte)
 			n = GetPrevNode(n);
 			cf = (HEXFILE*)GetData(n);
 		break;
-		/*case KB_ALT_S: /* save as (TODO!!!) */
-		/*	save_as(cf);
-		/*break;*/
+		/*case KB_ALT_S: save as (TODO!!!)
+			save_as(cf);
+		break;*/
 		case KB_ALT_O:
 			options();
 		break;
@@ -225,7 +275,7 @@ uint8_t* add_byte()
 		return NULL;
 	}
 	
-	if( (temp = (uint8_t*)farrealloc((uint8_t FAR*)cf->buff, cf->size+1)) != NULL)
+	if( (temp = (uint8_t*)realloc((uint8_t)cf->buff, cf->size+1)) != NULL)
 	{
 		cf->buff = temp;
 		cf->buff[ cf->size ] = '\0';
@@ -259,7 +309,7 @@ uint8_t* delete_byte()
 		{
 			cf->buff[i] = cf->buff[i+1];
 		}
-		return cf->buff = farrealloc((uint8_t FAR*)cf->buff, --cf->size);
+		return cf->buff = realloc((uint8_t *)cf->buff, --cf->size);
 	}
 	return cf->buff;
 }
@@ -485,3 +535,5 @@ int main(int argc, char **argv)
 	SetVideoMode(CurrentVideoMode);
 	return 0;
 }
+
+#endif

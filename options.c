@@ -1,4 +1,22 @@
-#include "AHTHEX.H"
+/*
+* ahthex - a cross platform hex editor
+* Copyright (C) 2026 alperen-dev
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation; either version 2 of the License.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+* GNU General Public License for more details.
+*/
+
+#include "ahthex.h"
+
+int a1;
+
+#if 0
 
 uint16_t opt_offset_base = HEX; /* HEX, DEC, OCT */
 uint16_t opt_row_number = 25; /* 25, 43, 50 */
@@ -74,3 +92,5 @@ bool options(void)
 	return true;
 	ClearScreen();
 }
+
+#endif

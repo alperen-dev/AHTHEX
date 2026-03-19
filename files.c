@@ -1,6 +1,22 @@
-/* TODO: make this file portable. */
+/*
+* ahthex - a cross platform hex editor
+* Copyright (C) 2026 alperen-dev
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation; either version 2 of the License.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+* GNU General Public License for more details.
+*/
 
-#include "AHTHEX.H"
+#include "ahthex.h"
+
+int a2;
+
+#if 0
 
 static char temp_filename[MAXPATH];
 
@@ -249,3 +265,5 @@ bool create_new_file(Node *n)
 	
 	return false;
 }
+
+#endif

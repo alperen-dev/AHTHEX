@@ -1,27 +1,27 @@
-NAME	=	AHTHEXD
-EXT		=	COM
+NAME	=	ahthexd
+EXT		=	com
 SYSTEM	=	com
 CC		=	owcc
 WATCOM	=	$(%WATCOM)
 
 !ifndef SRCS
-!	warning SRCS is not defined!
+!	error SRCS is not defined!
 !endif
 !ifndef OBJS
-!	warning OBJS is not defined!
+!	error OBJS is not defined!
 !endif
 !ifndef OBJ_EXT
-!	warning OBJ_EXT is not defined!
+!	error OBJ_EXT is not defined!
 !endif
 !ifndef DIR_INCLUDE
-!	warning DIR_INCLUDE is not defined!
+!	error DIR_INCLUDE is not defined!
 !endif
 !ifndef DIR_SOURCE
-!	warning DIR_SOURCE is not deined!
+!	error DIR_SOURCE is not defined!
 !endif
 
 SRCS += $(DIR_SOURCE)/dosproc.c
 OBJS += $(DIR_BUILD)/dosproc.$(OBJ_EXT)
 
-CFLAGS	=	-Wno-n101 -Wall -Wextra -b $(SYSTEM) -march=i86 -mabi=cdecl -fpack-struct=2 -mregparm=0 -mcmodel=mt -I="$(WATCOM)/h" -I="$(DIR_INCLUDE)"
+CFLAGS	=	-Wno-n101 -Wall -Wextra -b $(SYSTEM) -march=i86 -mabi=cdecl -fpack-struct=2 -mregparm=0 -mcmodel=t -I="$(WATCOM)/h" -I="$(DIR_INCLUDE)"
 LDFLAGS	=	$(CFLAGS) -Wl,"option quiet" -Wl,"disable 1019"

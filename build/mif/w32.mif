@@ -1,0 +1,27 @@
+NAME	=	ahthexw32
+EXT		=	exe
+SYSTEM	=	NT
+CC		=	owcc
+WATCOM	=	$(%WATCOM)
+
+!ifndef SRCS
+!	error SRCS is not defined!
+!endif
+!ifndef OBJS
+!	error OBJS is not defined!
+!endif
+!ifndef OBJ_EXT
+!	error OBJ_EXT is not defined!
+!endif
+!ifndef DIR_INCLUDE
+!	error DIR_INCLUDE is not defined!
+!endif
+!ifndef DIR_SOURCE
+!	error DIR_SOURCE is not defined!
+!endif
+
+SRCS += $(DIR_SOURCE)/w32proc.c
+OBJS += $(DIR_BUILD)/w32proc.$(OBJ_EXT)
+
+CFLAGS	=	-Wall -Wextra -b $(SYSTEM) -march=i386 -mabi=cdecl -fpack-struct=4 -mregparm=0 -mcmodel=f -I="$(WATCOM)/h" -I="$(WATCOM)/h/nt" -I="$(DIR_INCLUDE)"
+LDFLAGS	=	$(CFLAGS) -Wl,"option quiet"

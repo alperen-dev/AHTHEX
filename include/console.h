@@ -154,4 +154,11 @@ extern AnsiSupport ansiSupport;
 extern bool console_init(void);
 extern bool console_close(void);
 
+extern void put_char(uint16_t row, uint16_t col, char ch);
+extern void put_color(uint16_t row, uint16_t col, uint8_t attr);
+extern void put_cell(uint16_t row, uint16_t col, ScreenCell cell);
+extern void put_str(uint16_t row, uint16_t col, char *str);
+extern void put_cstr(uint16_t row, uint16_t col, char *str, uint8_t attr);
+extern bool update(void);
+
 #endif /* CONSOLE_H */

@@ -138,15 +138,6 @@ typedef struct VideoState
 extern const char *GFX_CARD_NAMES[];
 
 
-void put_char(uint16_t row, uint16_t col, char ch);
-void put_color(uint16_t row, uint16_t col, uint8_t attr);
-void put_cell(uint16_t row, uint16_t col, ScreenCell cell);
-void put_str(uint16_t row, uint16_t col, char *str);
-void put_cstr(uint16_t row, uint16_t col, char *str, uint8_t attr);
-bool update(void);
-
-
-
 
 
 #endif /* DOSPROC_H */
